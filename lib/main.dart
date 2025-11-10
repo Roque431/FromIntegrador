@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-
 import 'core/di/injection_container.dart' as di;
 import 'features/login/presentation/providers/login_notifier.dart';
 import 'features/register/presentation/providers/register_notifier.dart';
+import 'features/home/presentation/providers/home_notifier.dart';
 
 import 'myapp.dart';
 
@@ -26,8 +26,8 @@ Future<void> main() async {
         // Register
         ChangeNotifierProvider(create: (_) => di.sl<RegisterNotifier>()),
 
-        // Aquí agregarás más providers cuando integres otras features:
-        // ChangeNotifierProvider(create: (_) => di.sl<HomeNotifier>()),
+        // Home (Consultas)
+        ChangeNotifierProvider(create: (_) => di.sl<HomeNotifier>()),
       ],
       child: const MyApp(),
     ),

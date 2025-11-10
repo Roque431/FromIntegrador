@@ -19,6 +19,14 @@ import '../../features/register/domain/repository/register_repository.dart';
 import '../../features/register/domain/usecase/register_usecase.dart';
 import '../../features/register/presentation/providers/register_notifier.dart';
 
+// Home Feature
+import '../../features/home/data/datasource/consultation_datasource.dart';
+import '../../features/home/data/repository/consultation_repository_impl.dart';
+import '../../features/home/domain/repository/consultation_repository.dart';
+import '../../features/home/domain/usecase/send_message_usecase.dart';
+import '../../features/home/domain/usecase/get_chat_history_usecase.dart';
+import '../../features/home/presentation/providers/home_notifier.dart';
+
 final sl = GetIt.instance; // Service Locator
 
 Future<void> initializeDependencies() async {
@@ -91,6 +99,34 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(
     () => RegisterNotifier(
       registerUseCase: sl(),
+    ),
+  );
+
+  // ============================================
+  // Home Feature
+  // ============================================
+
+  // Data sources
+  sl.registerLazySingleton<ConsultationDataSource>(
+    () => ConsultationDataSourceImpl(apiClient: sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<ConsultationRepository>(
+    () => ConsultationRepositoryImpl(
+      dataSource: sl(),
+    ),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => SendMessageUseCase(repository: sl()));
+  sl.registerLazySingleton(() => GetChatHistoryUseCase(repository: sl()));
+
+  // Providers
+  sl.registerFactory(
+    () => HomeNotifier(
+      sendMessageUseCase: sl(),
+      getChatHistoryUseCase: sl(),
     ),
   );
 }
