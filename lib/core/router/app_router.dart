@@ -3,21 +3,22 @@ import 'package:flutter_application_1/features/consultation/presentation/pages/c
 import 'package:flutter_application_1/features/forum/pages/forum_detail_page.dart';
 import 'package:flutter_application_1/features/forum/pages/forum_page.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/home_page.dart';
- import 'package:go_router/go_router.dart';
-import '../application/app_state.dart';
+import 'package:go_router/go_router.dart';
+import '../../features/login/presentation/providers/login_notifier.dart';
 import 'routes.dart';
 import '../../features/login/pages/login_page.dart';
 import '../../features/register/presentation/pages/register_page.dart';
 import '../../features/welcome/presentation/pages/welcome_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/history/presentation/pages/history_page.dart';
-class AppRouter {
-  final AppState appState;
 
-  AppRouter({required this.appState});
+class AppRouter {
+  final LoginNotifier loginNotifier;
+
+  AppRouter({required this.loginNotifier});
 
   late final router = GoRouter(
-    refreshListenable: appState,
+    refreshListenable: loginNotifier,
     
     // ⚠️ TEMPORAL: Cambiado a /home para desarrollo
     initialLocation: '/home',
@@ -82,11 +83,11 @@ class AppRouter {
     /*
     redirect: (context, state) {
       final isGoingToLogin = state.matchedLocation == '/login';
-      if (appState.authStatus == AuthStatus.checking) return null;
-      if (!appState.isAuthenticated && !isGoingToLogin) {
+      if (loginNotifier.state == LoginState.loading) return null;
+      if (!loginNotifier.isAuthenticated && !isGoingToLogin) {
         return '/login';
       }
-      if (appState.isAuthenticated && isGoingToLogin) {
+      if (loginNotifier.isAuthenticated && isGoingToLogin) {
         return '/home';
       }
       return null;
