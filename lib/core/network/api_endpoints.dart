@@ -1,44 +1,59 @@
 class ApiEndpoints {
-  // Base
-  static const String api = '/api';
-  static const String v1 = '$api/v1';
+  // Base - Sin /api porque nginx ya rutea directo
+  static const String api = '';
 
-  // Auth endpoints
-  static const String auth = '$v1/auth';
+  // ========================================
+  // Auth endpoints (Microservicio Usuarios)
+  // ========================================
+  static const String usuarios = '/usuarios';
+  static const String auth = '$usuarios/auth';
   static const String login = '$auth/login';
   static const String register = '$auth/register';
   static const String logout = '$auth/logout';
-  static const String refreshToken = '$auth/refresh';
-  static const String me = '$auth/me';
-  static const String forgotPassword = '$auth/forgot-password';
-  static const String resetPassword = '$auth/reset-password';
-
-  // User endpoints
-  static const String users = '$v1/users';
+  static const String me = '$usuarios/users/me';  // Endpoint para perfil
+  static const String users = '$usuarios/users';  // CRUD usuarios
   static String userById(String id) => '$users/$id';
-  static String updateUser(String id) => '$users/$id';
-  static String deleteUser(String id) => '$users/$id';
 
-  // Consultation endpoints
-  static const String consultations = '$v1/consultations';
-  static String consultationById(String id) => '$consultations/$id';
-  static String createConsultation = consultations;
-  static String userConsultations(String userId) => '$users/$userId/consultations';
+  // ========================================
+  // Consultas NLP (Chat Legal)
+  // ========================================
+  static const String consultas = '/consultas';
+  static const String chatMessage = '$consultas/queries/chat/message';
+  static const String chatHistory = '$consultas/queries/history';
+  static const String chatSessions = '$consultas/queries/sessions';
+  static String chatSessionById(String id) => '$chatSessions/$id';
 
-  // Forum endpoints
-  static const String forum = '$v1/forum';
-  static const String posts = '$forum/posts';
-  static String postById(String id) => '$posts/$id';
-  static String postComments(String postId) => '$posts/$postId/comments';
-  static String createComment(String postId) => '$posts/$postId/comments';
+  // ========================================
+  // Ubicación/Orientación Local
+  // ========================================
+  static const String ubicacion = '/ubicacion';
+  static const String asesoria = '$ubicacion/locations/asesoria';
+  static const String nearby = '$ubicacion/locations/nearby';
+  static const String locations = '$ubicacion/locations';
+  static String locationById(String id) => '$locations/$id';
 
-  // Legal map endpoints
-  static const String legalMap = '$v1/legal-map';
-  static String legalMapByState(String state) => '$legalMap/$state';
+  // ========================================
+  // Foro Comunidad
+  // ========================================
+  static const String foro = '/foro';
+  static const String topics = '$foro/community/topics';
+  static const String messages = '$foro/community/messages';
+  static String topicById(String id) => '$topics/$id';
+  static String messagesByTopic(String topicId) => '$topics/$topicId/messages';
 
-  // Subscription endpoints
-  static const String subscriptions = '$v1/subscriptions';
-  static const String createSubscription = '$subscriptions/create';
-  static const String cancelSubscription = '$subscriptions/cancel';
-  static String subscriptionStatus(String userId) => '$subscriptions/$userId/status';
+  // ========================================
+  // Contenido Legal
+  // ========================================
+  static const String contenido = '/contenido';
+  static const String searchContent = '$contenido/content/search';
+  static const String getContent = '$contenido/content';
+  static String contentById(String id) => '$getContent/$id';
+
+  // ========================================
+  // Transacciones (Stripe)
+  // ========================================
+  static const String transacciones = '/transacciones';
+  static const String checkout = '$transacciones/checkout/create';
+  static const String verifyPayment = '$transacciones/checkout/verify';
+  static String paymentStatus(String sessionId) => '$transacciones/checkout/status/$sessionId';
 }
