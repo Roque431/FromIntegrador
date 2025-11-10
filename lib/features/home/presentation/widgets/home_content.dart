@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/home_notifier.dart';
 import 'question_chip.dart';
 import 'consultation_input.dart';
 
@@ -14,6 +16,7 @@ class HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 600;
+    final homeNotifier = context.watch<HomeNotifier>();
 
     return Column(
       children: [
@@ -101,7 +104,87 @@ class HomeContent extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: isWeb ? 60 : 40),
+                    SizedBox(height: isWeb ? 40 : 24),
+
+                    // Indicador de carga
+                    if (homeNotifier.isLoading)
+                      Column(
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Procesando tu consulta...',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.tertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    // Respuesta de la consulta
+                    if (homeNotifier.currentResponse != null &&
+                        !homeNotifier.isLoading)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        margin: EdgeInsets.only(bottom: isWeb ? 40 : 24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.lightbulb_outline,
+                                  color: Theme.of(context).colorScheme.secondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Respuesta de LexIA',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Theme.of(context).colorScheme.tertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              homeNotifier.currentResponse!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.5,
+                                color: Theme.of(context).colorScheme.tertiary,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: () {
+                                    homeNotifier.clearSession();
+                                  },
+                                  icon: const Icon(Icons.refresh, size: 18),
+                                  label: const Text('Nueva consulta'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    SizedBox(height: isWeb ? 40 : 24),
                   ],
                 ),
               ),

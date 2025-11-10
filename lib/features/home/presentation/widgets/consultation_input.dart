@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/home_notifier.dart';
 
 class ConsultationInput extends StatefulWidget {
   const ConsultationInput({super.key});
@@ -27,14 +29,41 @@ class _ConsultationInputState extends State<ConsultationInput> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     if (_controller.text.trim().isEmpty) return;
-    
-    // TODO: Enviar mensaje a la API
+
     final message = _controller.text.trim();
-    print('Enviando: $message');
-    
+    final homeNotifier = context.read<HomeNotifier>();
+
+    // Limpiar el campo inmediatamente
     _controller.clear();
+
+    // Enviar mensaje a la API
+    final success = await homeNotifier.sendMessage(message);
+
+    if (!mounted) return;
+
+    if (success) {
+      // Mostrar notificación de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Consulta enviada correctamente'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Mostrar error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            homeNotifier.errorMessage ?? 'Error al enviar consulta',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
