@@ -3,25 +3,31 @@ import 'package:flutter_application_1/features/consultation/presentation/pages/c
 import 'package:flutter_application_1/features/forum/pages/forum_detail_page.dart';
 import 'package:flutter_application_1/features/forum/pages/forum_page.dart';
 import 'package:flutter_application_1/features/home/presentation/pages/home_page.dart';
+import 'package:flutter_application_1/features/legal_content/presentation/pages/legal_content_search_page.dart';
+import 'package:flutter_application_1/features/legal_content/presentation/pages/content_detail_page.dart';
+import 'package:flutter_application_1/features/location/presentation/pages/legal_map_page.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/login/presentation/providers/login_notifier.dart';
+import '../application/app_state.dart';
 import 'routes.dart';
 import '../../features/login/pages/login_page.dart';
 import '../../features/register/presentation/pages/register_page.dart';
+import '../../features/register/presentation/pages/verify_email_page.dart';
 import '../../features/welcome/presentation/pages/welcome_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/subscription/presentation/pages/subscription_screen.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 
 class AppRouter {
-  final LoginNotifier loginNotifier;
+  final AppState appState;
 
-  AppRouter({required this.loginNotifier});
+  AppRouter({required this.appState});
 
   late final router = GoRouter(
-    refreshListenable: loginNotifier,
+    refreshListenable: appState,
     
-    // ⚠️ TEMPORAL: Cambiado a /home para desarrollo
-    initialLocation: '/home',
+    // Cambiar a login como inicial para que el redirect funcione
+    initialLocation: '/login',
     
     routes: [
       GoRoute(
@@ -40,6 +46,14 @@ class AppRouter {
         builder: (context, state) => const RegisterPage(),
       ),
       GoRoute(
+        name: AppRoutes.verifyEmail,
+        path: '/verify-email',
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return VerifyEmailPage(email: email);
+        },
+      ),
+      GoRoute(
         name: AppRoutes.welcome,
         path: '/welcome',
         builder: (context, state) => const WelcomePage(),
@@ -49,6 +63,16 @@ class AppRouter {
         name: AppRoutes.profile,
         path: '/profile',
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        name: AppRoutes.editProfile,
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        name: AppRoutes.subscription,
+        path: '/subscription',
+        builder: (context, state) => const SubscriptionScreen(),
       ),
       GoRoute(
         name: AppRoutes.history,
@@ -77,22 +101,44 @@ class AppRouter {
           return ForumDetailPage(postId: postId);
         },
       ),
+      GoRoute(
+        name: AppRoutes.legalContent,
+        path: '/legal-content',
+        builder: (context, state) => const LegalContentSearchPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.contentDetail,
+        path: '/legal-content/:id',
+        builder: (context, state) {
+          final contentId = state.pathParameters['id'] ?? '0';
+          return ContentDetailPage(contentId: contentId);
+        },
+      ),
+      GoRoute(
+        name: AppRoutes.legalMap,
+        path: '/legal-map',
+        builder: (context, state) => const LegalMapPage(),
+      ),
     ],
     
-    // ⚠️ TEMPORAL: Redirect comentado para desarrollo
-    /*
+    // Habilitar redirect para manejar autenticación
     redirect: (context, state) {
       final isGoingToLogin = state.matchedLocation == '/login';
-      if (loginNotifier.state == LoginState.loading) return null;
-      if (!loginNotifier.isAuthenticated && !isGoingToLogin) {
+      final isGoingToRegister = state.matchedLocation == '/register';
+      final isGoingToVerifyEmail = state.matchedLocation.startsWith('/verify-email');
+      
+      if (appState.authStatus == AuthStatus.checking) return null;
+      
+      if (!appState.isAuthenticated && !isGoingToLogin && !isGoingToRegister && !isGoingToVerifyEmail) {
         return '/login';
       }
-      if (loginNotifier.isAuthenticated && isGoingToLogin) {
+      
+      if (appState.isAuthenticated && isGoingToLogin) {
         return '/home';
       }
+      
       return null;
     },
-    */
     
     errorBuilder: (context, state) => Scaffold(
       body: Center(

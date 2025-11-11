@@ -26,7 +26,7 @@ class CategoryDropdown extends StatelessWidget {
 		return SizedBox(
 			width: 140,
 			child: DropdownButtonFormField<String>(
-				value: selectedCategory ?? (categories.contains('Todas') ? 'Todas' : null),
+				initialValue: selectedCategory ?? (categories.contains('Todas') ? 'Todas' : null),
 				items: categories
 						.map((c) => DropdownMenuItem<String>(
 									value: c,

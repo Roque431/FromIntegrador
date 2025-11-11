@@ -43,10 +43,15 @@ class ApiClient {
         queryParameters: queryParameters,
       );
 
+      // Logging for debugging
+      print('🚀 GET: $uri');
+
       final response = await _httpClient.get(
         uri,
         headers: requiresAuth ? _authHeaders : _defaultHeaders,
       );
+
+      print('📥 Response ${response.statusCode}: ${response.body}');
 
       return _handleResponse(response);
     } catch (e) {
@@ -58,10 +63,19 @@ class ApiClient {
   Future<dynamic> post(
     String endpoint, {
     Map<String, dynamic>? body,
+    Map<String, String>? queryParameters,
     bool requiresAuth = false,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl$endpoint');
+      final uri = Uri.parse('$baseUrl$endpoint').replace(
+        queryParameters: queryParameters,
+      );
+
+      // Temporary logging for debugging
+      print('🚀 POST: $uri');
+      if (body != null) {
+        print('📤 Body: ${jsonEncode(body)}');
+      }
 
       final response = await _httpClient.post(
         uri,
@@ -69,8 +83,11 @@ class ApiClient {
         body: body != null ? jsonEncode(body) : null,
       );
 
+      print('📥 Response ${response.statusCode}: ${response.body}');
+
       return _handleResponse(response);
     } catch (e) {
+      print('❌ POST Error: $e');
       throw ApiException('Error en POST request: $e');
     }
   }
@@ -84,11 +101,17 @@ class ApiClient {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
 
+      // Logging for debugging
+      print('🚀 PUT: $uri');
+      if (body != null) print('📤 Body: ${jsonEncode(body)}');
+
       final response = await _httpClient.put(
         uri,
         headers: requiresAuth ? _authHeaders : _defaultHeaders,
         body: body != null ? jsonEncode(body) : null,
       );
+
+      print('📥 Response ${response.statusCode}: ${response.body}');
 
       return _handleResponse(response);
     } catch (e) {
@@ -121,7 +144,13 @@ class ApiClient {
       case 200:
       case 201:
         if (response.body.isEmpty) return null;
-        return jsonDecode(response.body);
+        try {
+          return jsonDecode(response.body);
+        } catch (e) {
+          // Si no se puede parsear como JSON, devolver el body como string
+          print('⚠️ Response no es JSON válido: ${response.body}');
+          return response.body;
+        }
       case 204:
         return null;
       case 400:
@@ -133,11 +162,18 @@ class ApiClient {
           _getErrorMessage(response),
         );
       case 403:
+        final errorDetail = _getErrorDetail(response);
         throw ForbiddenException(
           _getErrorMessage(response),
+          detail: errorDetail,
         );
       case 404:
         throw NotFoundException(
+          _getErrorMessage(response),
+        );
+      case 422:
+        // FastAPI validation error
+        throw BadRequestException(
           _getErrorMessage(response),
         );
       case 500:
@@ -154,9 +190,37 @@ class ApiClient {
   String _getErrorMessage(http.Response response) {
     try {
       final body = jsonDecode(response.body);
-      return body['message'] ?? body['error'] ?? 'Error desconocido';
+      // Si detail es un objeto (como en límite de consultas)
+      if (body['detail'] is Map) {
+        final detail = body['detail'] as Map<String, dynamic>;
+        return detail['message'] ?? detail['error'] ?? 'Error desconocido';
+      }
+      // FastAPI 422 típicamente devuelve una lista en 'detail'
+      if (body['detail'] is List) {
+        final List details = body['detail'];
+        if (details.isNotEmpty && details.first is Map) {
+          final Map first = details.first as Map;
+          final msg = first['msg'] ?? first['message'] ?? 'Error de validación';
+          final loc = (first['loc'] is List) ? (first['loc'] as List).join('.') : first['loc'];
+          return loc != null ? '$msg (campo: $loc)' : '$msg';
+        }
+        return 'Error de validación';
+      }
+      return body['detail'] ?? body['message'] ?? body['error'] ?? 'Error desconocido';
     } catch (e) {
       return 'Error en la respuesta del servidor';
+    }
+  }
+  
+  Map<String, dynamic>? _getErrorDetail(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body['detail'] is Map) {
+        return body['detail'] as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 
@@ -183,7 +247,13 @@ class UnauthorizedException extends ApiException {
 }
 
 class ForbiddenException extends ApiException {
-  ForbiddenException(super.message);
+  final Map<String, dynamic>? detail;
+  ForbiddenException(super.message, {this.detail});
+  
+  bool get isQuotaLimit => detail != null && detail!['error'] == 'Límite de consultas alcanzado';
+  int? get usage => detail?['usage'];
+  int? get limit => detail?['limit'];
+  String? get resetDate => detail?['reset_date'];
 }
 
 class NotFoundException extends ApiException {

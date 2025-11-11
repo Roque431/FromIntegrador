@@ -10,6 +10,8 @@ class SendMessageUseCase {
     required String message,
     String? sessionId,
   }) async {
+    print('🔵 UseCase - sessionId recibido: $sessionId');
+    
     // Validaciones
     if (message.trim().isEmpty) {
       throw Exception('El mensaje no puede estar vacío');
@@ -20,9 +22,12 @@ class SendMessageUseCase {
     }
 
     // Ejecutar la consulta
-    return await repository.sendMessage(
+    final result = await repository.sendMessage(
       message: message.trim(),
       sessionId: sessionId,
     );
+    
+    print('🟢 UseCase - sessionId en respuesta: ${result.consultation.sessionId}');
+    return result;
   }
 }

@@ -11,18 +11,39 @@ class UserModel extends User {
     super.createdAt,
   });
 
-  // From JSON
+  // From JSON - Compatible con backend LexIA
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Si viene del login, el usuario está anidado en 'usuario'
+    final Map<String, dynamic> userData = json['usuario'] != null 
+        ? Map<String, dynamic>.from(json['usuario'])
+        : Map<String, dynamic>.from(json);
+    
+    // Detectar si es PRO basándose en suscripcion_id o suscripcion.tipo
+    final int? suscripcionId = userData['suscripcion_id'] is int
+        ? userData['suscripcion_id'] as int
+        : int.tryParse('${userData['suscripcion_id'] ?? ''}');
+    
+    final String? suscripcionTipo = userData['suscripcion'] is Map
+        ? (userData['suscripcion']?['tipo'] as String?)
+        : null;
+    
+    final bool isPro = (suscripcionId == 2) || (suscripcionTipo == 'pro');
+    
+    // Parsear fecha de creación
+    DateTime? createdAt;
+    final fechaRegistro = userData['fecha_registro'] ?? userData['createdAt'];
+    if (fechaRegistro is String && fechaRegistro.isNotEmpty) {
+      createdAt = DateTime.tryParse(fechaRegistro);
+    }
+    
     return UserModel(
-      id: json['id'] ?? json['_id'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? json['firstName'] ?? '',
-      lastName: json['lastName'] ?? json['apellidos'],
-      phone: json['phone'] ?? json['telefono'],
-      isPro: json['isPro'] ?? json['is_pro'] ?? false,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'])
-          : null,
+      id: '${userData['id'] ?? userData['_id'] ?? ''}',
+      email: '${userData['email'] ?? ''}',
+      name: '${userData['nombre'] ?? userData['name'] ?? ''}',
+      lastName: userData['apellidos']?.toString(),
+      phone: userData['telefono']?.toString(),
+      isPro: isPro,
+      createdAt: createdAt,
     );
   }
 
@@ -57,6 +78,19 @@ class UserModel extends User {
       phone: phone ?? this.phone,
       isPro: isPro ?? this.isPro,
       createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  // Convert to domain entity
+  User toEntity() {
+    return User(
+      id: id,
+      email: email,
+      name: name,
+      lastName: lastName,
+      phone: phone,
+      isPro: isPro,
+      createdAt: createdAt,
     );
   }
 }

@@ -36,8 +36,42 @@ class LoginRepositoryImpl implements LoginRepository {
   }
 
   @override
+  Future<({User user, String token})> loginWithGoogle(String idToken) async {
+    final response = await dataSource.loginWithGoogle(idToken);
+
+    // Guardar token en local
+    await saveToken(response.token);
+    await sharedPreferences.setString(_userIdKey, response.user.id);
+
+    return (user: response.user, token: response.token);
+  }
+
+  @override
   Future<User> getCurrentUser() async {
+    // Si hay token almacenado, inicializarlo en el datasource/apiClient
+    final token = sharedPreferences.getString(_tokenKey);
+    if (token != null && token.isNotEmpty) {
+      try {
+        dataSource.setAuthToken(token);
+      } catch (_) {
+        // En caso de que la implementación no exponga setAuthToken, ignorar
+      }
+    }
+
     return await dataSource.getCurrentUser();
+  }
+
+  @override
+  Future<User> updateProfile({
+    required String name,
+    required String email,
+    String? phone,
+  }) async {
+    return await dataSource.updateProfile(
+      name: name,
+      email: email,
+      phone: phone,
+    );
   }
 
   @override

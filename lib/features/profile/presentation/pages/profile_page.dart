@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/application/app_state.dart';
+import '../../../login/presentation/providers/login_notifier.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_menu_item.dart';
 
@@ -11,6 +14,23 @@ class ProfilePage extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 600;
+    
+    // Obtener información del usuario autenticado
+    final loginNotifier = context.watch<LoginNotifier>();
+    final currentUser = loginNotifier.currentUser;
+    
+    // DEBUG: Imprimir información del usuario
+    print('🔍 DEBUG ProfilePage:');
+    print('   LoginNotifier state: ${loginNotifier.state}');
+    print('   Current user: $currentUser');
+    print('   User name: ${currentUser?.name}');
+    print('   User email: ${currentUser?.email}');
+    
+    // Datos por defecto si no hay usuario
+    final userName = currentUser?.fullName ?? 'Usuario Sin Nombre';
+    final userEmail = currentUser?.email ?? 'usuario@ejemplo.com';
+    final userInitials = currentUser?.initials ?? 'U';
+    final userPhone = currentUser?.phone ?? 'No disponible';
 
     return Scaffold(
       backgroundColor: colors.primary,
@@ -44,21 +64,54 @@ class ProfilePage extends StatelessWidget {
                   SizedBox(height: isWeb ? 24 : 16),
 
                   // Header con avatar y nombre
-                  const ProfileHeader(
-                    name: 'Carlos Rafael',
-                    initials: 'CR',
+                  ProfileHeader(
+                    name: userName,
+                    initials: userInitials,
                   ),
 
-                  SizedBox(height: isWeb ? 32 : 24),
+                  SizedBox(height: isWeb ? 16 : 12),
+
+                  // Botón de editar perfil
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isWeb ? 32 : 24),
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push('/profile/edit'),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        color: colors.secondary,
+                        size: isWeb ? 20 : 18,
+                      ),
+                      label: Text(
+                        'Editar Perfil',
+                        style: TextStyle(
+                          color: colors.secondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: isWeb ? 16 : 14,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size(double.infinity, isWeb ? 48 : 44),
+                        side: BorderSide(
+                          color: colors.secondary,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(isWeb ? 12 : 10),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: isWeb ? 24 : 16),
 
                   // Opciones del menú
                   ProfileMenuItem(
                     icon: Icons.email_outlined,
                     iconColor: colors.secondary,
                     title: 'Correo Electrónico',
-                    subtitle: 'Ranosdcarlos@gmail.com',
+                    subtitle: userEmail,
                     onTap: () {
-                      // TODO: Navegar a editar email
+                      context.push('/profile/edit');
                     },
                   ),
 
@@ -66,9 +119,9 @@ class ProfilePage extends StatelessWidget {
                     icon: Icons.phone_outlined,
                     iconColor: colors.secondary,
                     title: 'Numero de Teléfono',
-                    subtitle: '+52 9619999999',
+                    subtitle: userPhone,
                     onTap: () {
-                      // TODO: Navegar a editar teléfono
+                      context.push('/profile/edit');
                     },
                   ),
 
@@ -101,7 +154,7 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ),
                     onTap: () {
-                      context.push('/welcome');
+                      context.push('/subscription');
                     },
                   ),
 
@@ -171,11 +224,20 @@ class ProfilePage extends StatelessWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Llamar al logout del LoginNotifier
-              // context.read<LoginNotifier>().logout();
-              context.go('/login');
+              
+              // Realizar logout real
+              final loginNotifier = context.read<LoginNotifier>();
+              final appState = context.read<AppState>();
+              
+              await loginNotifier.logout();
+              appState.logout();
+              
+              // Navegar al login
+              if (context.mounted) {
+                context.go('/login');
+              }
             },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red.shade400,

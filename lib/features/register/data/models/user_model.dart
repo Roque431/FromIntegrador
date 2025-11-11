@@ -11,18 +11,34 @@ class UserModel extends User {
     super.createdAt,
   });
 
-  // From JSON
+  // From JSON (compatible con backend LexIA)
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final Map<String, dynamic> data = json['usuario'] != null
+        ? Map<String, dynamic>.from(json['usuario'])
+        : Map<String, dynamic>.from(json);
+
+    final int? suscripcionId = data['suscripcion_id'] is int
+        ? data['suscripcion_id'] as int
+        : int.tryParse('${data['suscripcion_id'] ?? ''}');
+  final String? suscripcionTipo = data['suscripcion'] is Map
+    ? (data['suscripcion'] as Map)['tipo']?.toString()
+    : null;
+    final bool isPro = (suscripcionId == 2) || (suscripcionTipo == 'pro');
+
+    DateTime? createdAt;
+    final fechaRegistro = data['fecha_registro'] ?? data['createdAt'];
+    if (fechaRegistro is String && fechaRegistro.isNotEmpty) {
+      createdAt = DateTime.tryParse(fechaRegistro);
+    }
+
     return UserModel(
-      id: json['id'] ?? json['_id'] ?? '',
-      email: json['email'] ?? '',
-      name: json['name'] ?? json['firstName'] ?? '',
-      lastName: json['lastName'] ?? json['apellidos'],
-      phone: json['phone'] ?? json['telefono'],
-      isPro: json['isPro'] ?? json['is_pro'] ?? false,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'])
-          : null,
+      id: '${data['id'] ?? data['_id'] ?? ''}',
+      email: '${data['email'] ?? ''}',
+      name: '${data['nombre'] ?? data['name'] ?? ''}',
+      lastName: data['apellidos']?.toString(),
+      phone: data['telefono']?.toString(),
+      isPro: isPro,
+      createdAt: createdAt,
     );
   }
 
@@ -57,6 +73,19 @@ class UserModel extends User {
       phone: phone ?? this.phone,
       isPro: isPro ?? this.isPro,
       createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  // Convert to domain entity
+  User toEntity() {
+    return User(
+      id: id,
+      email: email,
+      name: name,
+      lastName: lastName,
+      phone: phone,
+      isPro: isPro,
+      createdAt: createdAt,
     );
   }
 }

@@ -13,6 +13,8 @@ class ConsultationRepositoryImpl implements ConsultationRepository {
     required String message,
     String? sessionId,
   }) async {
+    print('🔵 Repository - sessionId recibido: $sessionId');
+    
     final request = ChatMessageRequest(
       message: message,
       sessionId: sessionId,
@@ -20,6 +22,8 @@ class ConsultationRepositoryImpl implements ConsultationRepository {
 
     final response = await dataSource.sendMessage(request);
 
+    print('🟢 Repository - sessionId en respuesta: ${response.sessionId}');
+    
     // Si el backend devuelve una consulta completa
     if (response.consultation != null) {
       return (

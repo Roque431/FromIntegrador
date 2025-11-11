@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../home/presentation/providers/home_notifier.dart';
 import '../../widgets/history_filter_chip.dart';
 import '../../widgets/history_consultation_card.dart';
 import '../../widgets/category_dropdown.dart';
@@ -16,21 +18,14 @@ class _HistoryPageState extends State<HistoryPage> {
   String _selectedFilter = 'Total Consultas';
   String? _selectedCategory;
 
-  // Datos de ejemplo - TODO: Reemplazar con datos reales de la API
-  final List<Map<String, dynamic>> _consultations = List.generate(
-    8,
-    (index) => {
-      'id': 'consulta_$index',
-      'category': 'Laboral',
-      'date': '21 de octubre de 2025',
-      'question': '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-      'answer': 'LexIA: Según el artículo 50 de la ley federal...',
-    },
-  );
-
-  List<Map<String, dynamic>> get _filteredConsultations {
-    // TODO: Implementar filtrado real cuando tengas la API
-    return _consultations;
+  @override
+  void initState() {
+    super.initState();
+    // Cargar historial real al entrar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeNotifier = context.read<HomeNotifier>();
+      homeNotifier.loadChatHistory();
+    });
   }
 
   @override
@@ -42,6 +37,19 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final homeNotifier = context.watch<HomeNotifier>();
+    final consultations = homeNotifier.consultations;
+    final isLoading = homeNotifier.isLoading;
+    final hasError = homeNotifier.hasError;
+    final errorMessage = homeNotifier.errorMessage;
+
+    // Filtrado simple por categoría y búsqueda
+    final filtered = consultations.where((c) {
+      final matchesCategory = _selectedCategory == null || c.category == _selectedCategory;
+      final search = _searchController.text.trim().toLowerCase();
+      final matchesSearch = search.isEmpty || c.query.toLowerCase().contains(search);
+      return matchesCategory && matchesSearch;
+    }).toList();
 
     return Scaffold(
       backgroundColor: colors.primary,
@@ -157,8 +165,21 @@ class _HistoryPageState extends State<HistoryPage> {
             
             // Lista de consultas
             Expanded(
-              child: _filteredConsultations.isEmpty
-                  ? Center(
+              child: Builder(
+                builder: (_) {
+                  if (isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (hasError) {
+                    return Center(
+                      child: Text(
+                        errorMessage ?? 'Error al cargar historial',
+                        style: TextStyle(color: colors.error),
+                      ),
+                    );
+                  }
+                  if (filtered.isEmpty) {
+                    return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -177,26 +198,33 @@ class _HistoryPageState extends State<HistoryPage> {
                           ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _filteredConsultations.length,
-                      itemBuilder: (context, index) {
-                        final consultation = _filteredConsultations[index];
-                        return HistoryConsultationCard(
-                          category: consultation['category'],
-                          date: consultation['date'],
-                          question: consultation['question'],
-                          answer: consultation['answer'],
-                          consultationId: consultation['id'],
-                          // onTap ya no es necesario, usa el del widget por defecto
-                        );
-                      },
-                    ),
+                    );
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final c = filtered[index];
+                      return HistoryConsultationCard(
+                        category: c.category ?? 'General',
+                        date: _formatDate(c.createdAt),
+                        question: c.query,
+                        answer: c.response,
+                        consultationId: c.id,
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    // Formato simple DD/MM/YYYY - se puede mejorar con intl
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 }

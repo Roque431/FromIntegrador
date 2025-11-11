@@ -1,12 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
+import '../../../core/application/app_state.dart';
 import 'package:provider/provider.dart';
 import '../presentation/providers/login_notifier.dart';
 import '../widgets/login_button.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,13 +82,23 @@ class LoginPage extends StatelessWidget {
                           LoginButton(
                             text: 'Continuar con Google',
                             onPressed: () async {
-                              final ok = await context.read<LoginNotifier>().loginWithGoogle();
+                              final loginNotifier = context.read<LoginNotifier>();
+                              final ok = await loginNotifier.loginWithGoogle();
                               if (ok) {
-                                if (context.mounted) context.goNamed(AppRoutes.welcome);
+                                // Actualizar estado de autenticación
+                                final appState = context.read<AppState>();
+                                appState.login();
+                                
+                                if (context.mounted) context.goNamed(AppRoutes.home);
                               } else {
                                 if (context.mounted) {
+                                  final errorMessage = loginNotifier.errorMessage ?? 'No se pudo iniciar sesión con Google';
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('No se pudo iniciar sesión con Google')),
+                                    SnackBar(
+                                      content: Text(errorMessage),
+                                      backgroundColor: Colors.red,
+                                      duration: const Duration(seconds: 4),
+                                    ),
                                   );
                                 }
                               }
@@ -83,7 +109,11 @@ class LoginPage extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text('o', style: TextStyle(color: colors.tertiary.withValues(alpha: 0.6))),
                           const SizedBox(height: 12),
+                          
+                          // Campo Email
                           TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               hintText: 'Ingresa tu correo electrónico',
                               hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -100,10 +130,66 @@ class LoginPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          
+                          // Campo Contraseña
+                          TextField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              hintText: 'Ingresa tu contraseña',
+                              hintStyle: TextStyle(color: Colors.grey.shade400),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: colors.secondary, width: 2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          
+                          // Botón Login con Email
                           LoginButton(
-                            text: 'Continuar con correo electrónico',
-                            onPressed: () {
-                              // Aquí iría la navegación a la vista de login por correo
+                            text: 'Iniciar Sesión',
+                            onPressed: () async {
+                              // Validar campos
+                              if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Por favor ingresa email y contraseña'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              // Intentar login
+                              final loginNotifier = context.read<LoginNotifier>();
+                              final success = await loginNotifier.login(
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text,
+                              );
+
+                              if (context.mounted) {
+                                if (success) {
+                                  // Actualizar estado de autenticación
+                                  final appState = context.read<AppState>();
+                                  appState.login();
+                                  
+                                  context.goNamed(AppRoutes.home);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(loginNotifier.errorMessage ?? 'Error al iniciar sesión'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
                             },
                             backgroundColor: colors.secondary,
                             textColor: Colors.white,
