@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import '../../../../core/application/app_state.dart'; // Para AuthStatus
+import '../../../../core/services/google_sign_in_service.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repository/login_repository.dart';
 import '../../domain/usecase/login_usecase.dart';
@@ -12,11 +12,13 @@ class LoginNotifier extends ChangeNotifier {
   final LoginUseCase loginUseCase;
   final LogoutUseCase logoutUseCase;
   final LoginRepository loginRepository;
+  final GoogleSignInService googleSignInService;
 
   LoginNotifier({
     required this.loginUseCase,
     required this.logoutUseCase,
     required this.loginRepository,
+    required this.googleSignInService,
   });
 
   LoginState _state = LoginState.initial;
@@ -28,11 +30,28 @@ class LoginNotifier extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _state == LoginState.authenticated;
   bool get isLoading => _state == LoginState.loading;
+  
+  // Para compatibilidad con AppRouter
+  AuthStatus get authStatus {
+    switch (_state) {
+      case LoginState.loading:
+      case LoginState.initial:
+        return AuthStatus.checking;
+      case LoginState.authenticated:
+        return AuthStatus.authenticated;
+      case LoginState.unauthenticated:
+      case LoginState.error:
+        return AuthStatus.notAuthenticated;
+    }
+  }
 
   // ==========================================
   // Login con Email y Password
   // ==========================================
-  Future<bool> login(String email, String password) async {
+  Future<bool> login({
+    required String email, 
+    required String password,
+  }) async {
     try {
       _state = LoginState.loading;
       _errorMessage = null;
@@ -73,6 +92,23 @@ class LoginNotifier extends ChangeNotifier {
   }
 
   // ==========================================
+  // Setear usuario después de autenticación exitosa
+  // ==========================================
+  void setUserAfterSuccessfulAuth(String userId, String userEmail, String userName, String? lastName, String? phone, String token) {
+    _currentUser = User(
+      id: userId,
+      email: userEmail,
+      name: userName,
+      lastName: lastName,
+      phone: phone,
+      isPro: false,
+    );
+    _state = LoginState.authenticated;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // ==========================================
   // Login con Google
   // ==========================================
   Future<bool> loginWithGoogle() async {
@@ -81,39 +117,61 @@ class LoginNotifier extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final clientId = kIsWeb ? dotenv.env['GOOGLE_CLIENT_ID'] : null;
-      final googleSignIn = GoogleSignIn(clientId: clientId);
+      print('🔄 Iniciando proceso de login con Google...');
 
-      final account = await googleSignIn.signIn();
+      // 1. Iniciar sesión con Google
+      final account = await googleSignInService.signIn();
       if (account == null) {
+        print('❌ Google Sign-In cancelado');
         _state = LoginState.unauthenticated;
+        _errorMessage = 'Login con Google cancelado';
         notifyListeners();
-        return false; // usuario canceló
+        return false; // Usuario canceló
       }
 
-      // TODO: Enviar el token de Google al backend para autenticación
-      // Por ahora, simulamos el login exitoso
+      print('✅ Cuenta de Google obtenida: ${account.email}');
 
-      // Aquí deberías hacer la llamada al backend con el token de Google
-      // final googleAuth = await account.authentication;
-      // final idToken = googleAuth.idToken;
-      // await apiClient.post('/auth/google', body: {'idToken': idToken});
+      // 2. Obtener el ID token de Google
+      final idToken = await googleSignInService.getIdToken();
+      if (idToken == null) {
+        print('❌ No se pudo obtener el ID token de Google');
+        _state = LoginState.error;
+        _errorMessage = 'No se pudo obtener el token de autenticación de Google';
+        notifyListeners();
+        return false;
+      }
 
-      // Simulación temporal (eliminar cuando conectes con backend)
-      _currentUser = User(
-        id: account.id,
-        email: account.email,
-        name: account.displayName ?? 'Usuario',
-        isPro: false,
-      );
+      print('✅ ID Token obtenido, enviando al backend...');
 
+      // 3. Enviar el token al backend para autenticar con OAuth
+      final result = await loginRepository.loginWithGoogle(idToken);
+
+      _currentUser = result.user;
+      await loginRepository.saveToken(result.token);
+
+      print('✅ Login con Google completado exitosamente');
       _state = LoginState.authenticated;
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('Google sign-in error: $e');
+      print('❌ Error completo en Google Sign-In: $e');
+      print('   Stack trace: ${StackTrace.current}');
+      
       _state = LoginState.error;
-      _errorMessage = 'Error al iniciar sesión con Google';
+      
+      // Mensajes de error más específicos
+      if (e.toString().contains('network')) {
+        _errorMessage = 'Error de conexión. Verifica tu internet.';
+      } else if (e.toString().contains('google-services')) {
+        _errorMessage = 'Error de configuración de Google. Contacta soporte.';
+      } else if (e.toString().contains('token')) {
+        _errorMessage = 'Error de autenticación con Google. Intenta nuevamente.';
+      } else if (e.toString().contains('ApiException')) {
+        _errorMessage = 'Error del servidor. Intenta más tarde.';
+      } else {
+        _errorMessage = 'No se pudo iniciar sesión con Google. Intenta más tarde.';
+      }
+      
       notifyListeners();
       return false;
     }
@@ -143,9 +201,57 @@ class LoginNotifier extends ChangeNotifier {
     }
   }
 
+  // ==========================================
+  // Actualizar Perfil de Usuario
+  // ==========================================
+  Future<bool> updateProfile({
+    required String name,
+    required String email,
+    String? phone,
+  }) async {
+    try {
+      _state = LoginState.loading;
+      notifyListeners();
+
+      // Hacer la llamada real al backend
+      final updatedUser = await loginRepository.updateProfile(
+        name: name,
+        email: email,
+        phone: phone,
+      );
+
+      // Actualizar el usuario actual con los datos del backend
+      _currentUser = updatedUser;
+
+      _state = LoginState.authenticated;
+      _errorMessage = null;
+      notifyListeners();
+      return true;
+
+    } catch (e) {
+      _state = LoginState.authenticated; // Mantener autenticado pero mostrar error
+      _errorMessage = 'Error al actualizar el perfil: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Limpiar errores
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // ==========================================
+  // Refrescar usuario desde backend (plan / isPro)
+  // ==========================================
+  Future<void> refreshCurrentUser() async {
+    try {
+      final user = await loginRepository.getCurrentUser();
+      _currentUser = user;
+      notifyListeners();
+    } catch (_) {
+      // Silencioso: si falla no cambiamos estado
+    }
   }
 }

@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../network/api_client.dart';
+import '../application/app_state.dart';
+import '../services/google_sign_in_service.dart';
 
 // Login Feature
 import '../../features/login/data/datasource/login_datasource.dart';
@@ -17,7 +19,10 @@ import '../../features/register/data/datasource/register_datasource.dart';
 import '../../features/register/data/repository/register_repository_impl.dart';
 import '../../features/register/domain/repository/register_repository.dart';
 import '../../features/register/domain/usecase/register_usecase.dart';
+import '../../features/register/domain/usecase/send_verification_code_usecase.dart';
+import '../../features/register/domain/usecase/verify_email_usecase.dart';
 import '../../features/register/presentation/providers/register_notifier.dart';
+import '../../features/register/presentation/providers/verify_email_notifier.dart';
 
 // Home Feature
 import '../../features/home/data/datasource/consultation_datasource.dart';
@@ -26,6 +31,25 @@ import '../../features/home/domain/repository/consultation_repository.dart';
 import '../../features/home/domain/usecase/send_message_usecase.dart';
 import '../../features/home/domain/usecase/get_chat_history_usecase.dart';
 import '../../features/home/presentation/providers/home_notifier.dart';
+
+// Subscription Feature
+import '../../features/subscription/data/datasource/transaction_datasource.dart';
+import '../../features/subscription/data/repository/transaction_repository.dart';
+import '../../features/subscription/domain/usecases/create_checkout_usecase.dart';
+import '../../features/subscription/domain/usecases/get_user_transactions_usecase.dart';
+import '../../features/subscription/presentation/providers/subscription_notifier.dart';
+
+// Consultation Feature  
+import '../../features/consultation/data/datasource/consultation_datasource.dart';
+import '../../features/consultation/data/repository/consultation_repository.dart' as nlp;
+
+// Legal Content Feature
+import '../../features/legal_content/data/datasource/legal_content_datasource.dart';
+import '../../features/legal_content/data/repository/legal_content_repository.dart';
+import '../../features/legal_content/presentation/providers/legal_content_notifier.dart';
+
+// Location Feature
+import '../../features/location/data/datasources/location_datasource.dart';
 
 final sl = GetIt.instance; // Service Locator
 
@@ -44,6 +68,12 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<ApiClient>(
     () => ApiClient(httpClient: sl()),
   );
+
+  // Application State
+  sl.registerLazySingleton<AppState>(() => AppState());
+
+  // Google Sign-In Service
+  sl.registerLazySingleton<GoogleSignInService>(() => GoogleSignInService());
 
   // ============================================
   // Login Feature
@@ -72,6 +102,7 @@ Future<void> initializeDependencies() async {
       loginUseCase: sl(),
       logoutUseCase: sl(),
       loginRepository: sl(),
+      googleSignInService: sl(),
     ),
   );
 
@@ -88,17 +119,27 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<RegisterRepository>(
     () => RegisterRepositoryImpl(
       dataSource: sl(),
+      loginDataSource: sl(),
       sharedPreferences: sl(),
     ),
   );
 
   // Use cases
   sl.registerLazySingleton(() => RegisterUseCase(repository: sl()));
+  sl.registerLazySingleton(() => SendVerificationCodeUseCase(sl()));
+  sl.registerLazySingleton(() => VerifyEmailUseCase(sl()));
 
   // Providers
   sl.registerFactory(
     () => RegisterNotifier(
       registerUseCase: sl(),
+    ),
+  );
+  
+  sl.registerFactory(
+    () => VerifyEmailNotifier(
+      sendVerificationCodeUseCase: sl(),
+      verifyEmailUseCase: sl(),
     ),
   );
 
@@ -108,7 +149,10 @@ Future<void> initializeDependencies() async {
 
   // Data sources
   sl.registerLazySingleton<ConsultationDataSource>(
-    () => ConsultationDataSourceImpl(apiClient: sl()),
+    () => ConsultationDataSourceImpl(
+      apiClient: sl(),
+      sharedPreferences: sl(),
+    ),
   );
 
   // Repository
@@ -128,5 +172,73 @@ Future<void> initializeDependencies() async {
       sendMessageUseCase: sl(),
       getChatHistoryUseCase: sl(),
     ),
+  );
+
+  // ============================================
+  // Subscription Feature
+  // ============================================
+
+  // Data sources
+  sl.registerLazySingleton<TransactionDatasource>(
+    () => TransactionDatasource(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<TransactionRepository>(
+    () => TransactionRepository(sl()),
+  );
+
+  // Use cases
+  sl.registerLazySingleton(() => CreateCheckoutUseCase(sl()));
+  sl.registerLazySingleton(() => GetUserTransactionsUseCase(sl()));
+
+  // Providers
+  sl.registerFactory(
+    () => SubscriptionNotifier(
+      createCheckoutUseCase: sl(),
+      getUserTransactionsUseCase: sl(),
+    ),
+  );
+
+  // ============================================
+  // Consultation Feature (NLP Chatbot)
+  // ============================================
+
+  // Data sources
+  sl.registerLazySingleton<ConsultationDatasource>(
+    () => ConsultationDatasource(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<nlp.ConsultationRepository>(
+    () => nlp.ConsultationRepository(sl()),
+  );
+
+  // ============================================
+  // Legal Content Feature
+  // ============================================
+
+  // Data sources
+  sl.registerLazySingleton<LegalContentDatasource>(
+    () => LegalContentDatasource(sl()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<LegalContentRepository>(
+    () => LegalContentRepository(sl()),
+  );
+
+  // Providers
+  sl.registerFactory(
+    () => LegalContentNotifier(repository: sl()),
+  );
+
+  // ============================================
+  // Location Feature
+  // ============================================
+
+  // Data sources
+  sl.registerLazySingleton<LocationDataSource>(
+    () => LocationDataSourceImpl(apiClient: sl()),
   );
 }

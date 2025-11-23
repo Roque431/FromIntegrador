@@ -11,4 +11,8 @@ abstract class RegisterRepository {
 
   Future<void> saveToken(String token);
   Future<String?> getStoredToken();
+  
+  // Email verification methods
+  Future<String> sendVerificationCode(String email);
+  Future<String> verifyEmail(String email, String code);
 }

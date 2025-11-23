@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/features/home/presentation/widgets/recent_consultation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../login/presentation/providers/login_notifier.dart';
 import 'drawer_menu_item.dart';
 
 class HomeDrawer extends StatelessWidget {
@@ -9,6 +11,13 @@ class HomeDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    
+    // Obtener información del usuario logeado
+    final loginNotifier = context.watch<LoginNotifier>();
+    final currentUser = loginNotifier.currentUser;
+    final userName = currentUser?.fullName ?? 'Usuario';
+    final userInitials = currentUser?.initials ?? 'U';
+    final userPlan = currentUser?.isPro == true ? 'Pro' : 'Free';
 
     return Drawer(
       backgroundColor: Colors.white,
@@ -66,10 +75,7 @@ class HomeDrawer extends StatelessWidget {
               color: colors.secondary,
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navegar al mapa legal
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Mapa Legal - TODO')),
-                );
+                context.push('/legal-map');
               },
             ),
             
@@ -155,7 +161,7 @@ class HomeDrawer extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         backgroundColor: colors.secondary,
-                        child: const Text('CR', style: TextStyle(color: Colors.white)),
+                        child: Text(userInitials, style: const TextStyle(color: Colors.white)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -164,11 +170,31 @@ class HomeDrawer extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Carlos Rafael',
+                              userName,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: colors.tertiary,
                                   ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: currentUser?.isPro == true 
+                                    ? Colors.amber.withValues(alpha: 0.2)
+                                    : colors.secondary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                userPlan,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: currentUser?.isPro == true 
+                                          ? Colors.amber.shade700
+                                          : colors.secondary,
+                                      fontSize: 10,
+                                    ),
+                              ),
                             ),
                           ],
                         ),

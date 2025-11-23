@@ -26,8 +26,8 @@ class RegisterUseCase {
       throw Exception('La contraseña es requerida');
     }
 
-    if (password.length < 6) {
-      throw Exception('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < 8) {
+      throw Exception('La contraseña debe tener al menos 8 caracteres');
     }
 
     if (name.isEmpty) {

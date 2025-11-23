@@ -2,6 +2,7 @@ class AppRoutes {
   // Rutas de autenticación
   static const String login = 'login';
   static const String register = 'register';
+  static const String verifyEmail = 'verify-email';
   static const String welcome = 'welcome';
 
   // Ruta principal
@@ -9,8 +10,13 @@ class AppRoutes {
 
   // Rutas de features
   static const String profile = 'profile';
+  static const String editProfile = 'edit-profile';
+  static const String subscription = 'subscription';
   static const String history = 'history';
   static const String consultationDetail = 'consultation-detail';
   static const String forum = 'forum';
   static const String forumDetail = 'forum-detail';
+  static const String legalContent = 'legal-content';
+  static const String contentDetail = 'content-detail';
+  static const String legalMap = 'legal-map';
 }

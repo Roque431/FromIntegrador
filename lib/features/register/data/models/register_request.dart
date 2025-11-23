@@ -1,9 +1,9 @@
 class RegisterRequest {
   final String email;
   final String password;
-  final String name;
-  final String? lastName;
-  final String? phone;
+  final String name; // nombre
+  final String? lastName; // apellidos
+  final String? phone; // telefono
 
   const RegisterRequest({
     required this.email,
@@ -13,13 +13,14 @@ class RegisterRequest {
     this.phone,
   });
 
+  // El backend espera: nombre, apellidos, telefono, email, password
   Map<String, dynamic> toJson() {
     return {
       'email': email,
       'password': password,
-      'name': name,
-      if (lastName != null) 'lastName': lastName,
-      if (phone != null) 'phone': phone,
+      'nombre': name,
+      if (lastName != null && lastName!.isNotEmpty) 'apellidos': lastName,
+      if (phone != null && phone!.isNotEmpty) 'telefono': phone,
     };
   }
 }

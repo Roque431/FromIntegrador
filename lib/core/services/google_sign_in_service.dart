@@ -1,0 +1,136 @@
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
+
+class GoogleSignInService {
+  final GoogleSignIn _googleSignIn;
+  final FirebaseAuth? _firebaseAuth;
+
+  GoogleSignInService() : 
+    _googleSignIn = GoogleSignIn(
+      scopes: ['email', 'profile'],
+      // En web necesitamos el clientId explícito
+      clientId: kIsWeb ? dotenv.dotenv.env['GOOGLE_CLIENT_ID_WEB'] : null,
+    ),
+    _firebaseAuth = kIsWeb ? null : FirebaseAuth.instance {
+    
+    print('🔧 GoogleSignIn configurado');
+    print('   Platform: ${kIsWeb ? "Web (Solo Google)" : "Mobile (Google + Firebase)"}');
+    print('   Scopes: email, profile');
+    if (kIsWeb) {
+      print('   Client ID: ${dotenv.dotenv.env['GOOGLE_CLIENT_ID_WEB'] ?? 'NOT_FOUND'}');
+    }
+  }
+
+  /// Inicia sesión con Google (con o sin Firebase según plataforma)
+  Future<GoogleSignInAccount?> signIn() async {
+    try {
+      print('🚀 Iniciando Google Sign-In...');
+      
+      // 1. Iniciar sesión con Google
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        print('❌ Google Sign-In cancelado por el usuario');
+        return null;
+      }
+      
+      print('✅ Google Sign-In exitoso: ${googleUser.email}');
+
+      // 2. Solo en móvil: autenticar con Firebase
+      if (!kIsWeb && _firebaseAuth != null) {
+        try {
+          final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+          final credential = GoogleAuthProvider.credential(
+            accessToken: googleAuth.accessToken,
+            idToken: googleAuth.idToken,
+          );
+          
+          final UserCredential userCredential = await _firebaseAuth!.signInWithCredential(credential);
+          print('✅ Firebase Auth exitoso: ${userCredential.user?.email}');
+        } catch (firebaseError) {
+          print('⚠️ Firebase Auth falló (continuando con Google): $firebaseError');
+        }
+      }
+      
+      return googleUser;
+    } catch (e) {
+      print('❌ Error en Google Sign-In: $e');
+      print('   Tipo de error: ${e.runtimeType}');
+      return null;
+    }
+  }
+
+  /// Obtiene el token de ID (Firebase en móvil, Google directo en web)
+  Future<String?> getIdToken() async {
+    try {
+      print('🔑 Obteniendo ID token...');
+      
+      // Prioridad 1: Firebase (móvil)
+      if (!kIsWeb && _firebaseAuth != null) {
+        final User? user = _firebaseAuth!.currentUser;
+        if (user != null) {
+          final String? idToken = await user.getIdToken();
+          if (idToken != null) {
+            print('✅ Firebase ID token obtenido');
+            return idToken;
+          }
+        }
+      }
+      
+      // Prioridad 2: Google directo (web o fallback)
+      final GoogleSignInAccount? account = _googleSignIn.currentUser ?? await _googleSignIn.signInSilently();
+      if (account != null) {
+        final GoogleSignInAuthentication auth = await account.authentication;
+        if (auth.idToken != null) {
+          print('✅ Google ID token obtenido');
+          return auth.idToken;
+        }
+      }
+      
+      print('❌ No se pudo obtener ID token');
+      return null;
+    } catch (e) {
+      print('❌ Error al obtener ID token: $e');
+      return null;
+    }
+  }
+
+  /// Obtiene el access token de Google
+  Future<String?> getAccessToken() async {
+    try {
+      final account = _googleSignIn.currentUser ?? await _googleSignIn.signIn();
+      if (account == null) return null;
+
+      final auth = await account.authentication;
+      return auth.accessToken;
+    } catch (e) {
+      print('Error al obtener access token: $e');
+      return null;
+    }
+  }
+
+  /// Cierra sesión de Google y Firebase (si está disponible)
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    if (!kIsWeb && _firebaseAuth != null) {
+      await _firebaseAuth!.signOut();
+    }
+  }
+
+  /// Desconecta completamente la cuenta de Google y Firebase (si está disponible)
+  Future<void> disconnect() async {
+    await _googleSignIn.disconnect();
+    if (!kIsWeb && _firebaseAuth != null) {
+      await _firebaseAuth!.signOut();
+    }
+  }
+
+  /// Verifica si hay una sesión activa
+  Future<bool> isSignedIn() async {
+    return await _googleSignIn.isSignedIn();
+  }
+
+  /// Obtiene la cuenta actual si está logueado
+  GoogleSignInAccount? get currentUser => _googleSignIn.currentUser;
+}

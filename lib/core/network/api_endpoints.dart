@@ -1,59 +1,91 @@
 class ApiEndpoints {
-  // Base - Sin /api porque nginx ya rutea directo
-  static const String api = '';
-
   // ========================================
-  // Auth endpoints (Microservicio Usuarios)
+  // Auth endpoints - Con prefijo /usuarios/ para nginx
   // ========================================
-  static const String usuarios = '/usuarios';
-  static const String auth = '$usuarios/auth';
-  static const String login = '$auth/login';
-  static const String register = '$auth/register';
-  static const String logout = '$auth/logout';
-  static const String me = '$usuarios/users/me';  // Endpoint para perfil
-  static const String users = '$usuarios/users';  // CRUD usuarios
+  static const String register = '/usuarios/users/register';  
+  static const String login = '/usuarios/users/login';
+  static const String googleLogin = '/usuarios/auth/google';
+  static const String logout = '/usuarios/users/logout';
+  static const String me = '/usuarios/users/me';
+  static const String updateProfile = '/usuarios/users/profile';
+  static const String users = '/usuarios/users';
   static String userById(String id) => '$users/$id';
 
   // ========================================
-  // Consultas NLP (Chat Legal)
+  // Email verification endpoints
+  // ========================================
+  static const String sendVerificationCode = '/usuarios/users/send-verification-code';
+  static const String verifyEmail = '/usuarios/users/verify-email';
+
+  // ========================================
+  // Consultation endpoints (Microservicio Consultas NLP)
   // ========================================
   static const String consultas = '/consultas';
   static const String chatMessage = '$consultas/queries/chat/message';
-  static const String chatHistory = '$consultas/queries/history';
+  static String chatHistory(String usuarioId) => '$consultas/queries/historial/$usuarioId';
   static const String chatSessions = '$consultas/queries/sessions';
   static String chatSessionById(String id) => '$chatSessions/$id';
+  
+  // Legacy compatibility
+  static const String consultations = chatSessions;
+  static String consultationById(String id) => '$consultations/$id';
+  static String createConsultation = chatMessage;
+  static String userConsultations(String userId) => '$chatHistory?usuario_id=$userId';
 
   // ========================================
-  // Ubicación/Orientación Local
+  // Legal Content endpoints (Microservicio Contenido Legal)
   // ========================================
-  static const String ubicacion = '/ubicacion';
-  static const String asesoria = '$ubicacion/locations/asesoria';
-  static const String nearby = '$ubicacion/locations/nearby';
-  static const String locations = '$ubicacion/locations';
-  static String locationById(String id) => '$locations/$id';
+  static const String contenido = '/contenido';
+  static const String contentSearch = '$contenido/content/search';
+  static const String contentIngest = '$contenido/content/ingest';
+  static const String contentList = '$contenido/content';
+  static String contentById(String id) => '$contenido/content/$id';
 
   // ========================================
-  // Foro Comunidad
+  // Forum endpoints (Microservicio Foro)
   // ========================================
   static const String foro = '/foro';
   static const String topics = '$foro/community/topics';
-  static const String messages = '$foro/community/messages';
   static String topicById(String id) => '$topics/$id';
-  static String messagesByTopic(String topicId) => '$topics/$topicId/messages';
+  static const String messages = '$foro/community/messages';
+  static String topicMessages(String topicId) => '$topics/$topicId/messages';
+  static String createMessage(String topicId) => '$messages';
+  
+  // Legacy compatibility
+  static const String forum = foro;
+  static const String posts = topics;
+  static String postById(String id) => '$posts/$id';
+  static String postComments(String postId) => topicMessages(postId);
+  static String createComment(String postId) => createMessage(postId);
 
   // ========================================
-  // Contenido Legal
+  // Legal map endpoints (Microservicio Orientación Local)
   // ========================================
-  static const String contenido = '/contenido';
-  static const String searchContent = '$contenido/content/search';
-  static const String getContent = '$contenido/content';
-  static String contentById(String id) => '$getContent/$id';
+  static const String ubicacion = '/ubicacion';
+  static const String advisory = '$ubicacion/locations/asesoria';
+  static const String nearbyLocations = '$ubicacion/locations/nearby';
+  static const String locations = '$ubicacion/locations';
+  static String locationById(String id) => '$locations/$id';
+  static String locationsByCity(String city) => '$locations/ciudad/$city';
+  static String locationsByType(String type) => '$locations/tipo/$type';
+  
+  // Legacy compatibility
+  static const String legalMap = advisory;
+  static const String asesoria = advisory;
+  static const String nearby = nearbyLocations;
+  static String legalMapByState(String state) => '$advisory?estado=$state';
 
   // ========================================
-  // Transacciones (Stripe)
+  // Subscription endpoints (Microservicio Transacciones)
   // ========================================
-  static const String transacciones = '/transacciones';
-  static const String checkout = '$transacciones/checkout/create';
-  static const String verifyPayment = '$transacciones/checkout/verify';
-  static String paymentStatus(String sessionId) => '$transacciones/checkout/status/$sessionId';
+  static const String transactions = '/transactions';
+  static const String createCheckout = '$transactions/create-checkout';
+  static String userTransactions(String userId) => '$transactions/user/$userId';
+  static String transactionById(String id) => '$transactions/$id';
+  
+  // Legacy compatibility
+  static const String transacciones = transactions;
+  static const String checkout = createCheckout;
+  static const String subscriptions = createCheckout;
+  static const String createSubscription = createCheckout;
 }

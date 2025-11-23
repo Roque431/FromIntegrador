@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "896954025505",
+    "project_id": "lexia-898c6",
+    "storage_bucket": "lexia-898c6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:896954025505:android:bed0af4fdb3408a7a64560",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "896954025505-16b1mjfkg2unrd867dh0tea3dpb9ahj8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOxKrnCExLDXPPkCLephNW7uul8d8007g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "896954025505-16b1mjfkg2unrd867dh0tea3dpb9ahj8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

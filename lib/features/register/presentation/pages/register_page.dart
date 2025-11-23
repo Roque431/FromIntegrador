@@ -196,8 +196,17 @@ class _RegisterPageState extends State<RegisterPage> {
 
                               if (context.mounted) {
                                 if (success) {
-                                  // Navegar a la página de bienvenida
-                                  context.goNamed(AppRoutes.welcome);
+                                  // Obtener los datos del usuario registrado
+                                  final registeredUser = registerNotifier.registeredUser;
+                                  final token = registerNotifier.token;
+                                  
+                                  print('🔍 DEBUG Register Success:');
+                                  print('   User: ${registeredUser?.name} ${registeredUser?.lastName}');
+                                  print('   Email: ${registeredUser?.email}');
+                                  print('   Token: ${token != null ? "Sí" : "No"}');
+                                  
+                                  // Navegar a la pantalla de verificación de email
+                                  context.go('/verify-email?email=${Uri.encodeComponent(_emailController.text.trim())}');
                                 } else {
                                   // Mostrar error
                                   ScaffoldMessenger.of(context).showSnackBar(

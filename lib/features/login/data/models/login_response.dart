@@ -13,8 +13,8 @@ class LoginResponse {
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
-      user: UserModel.fromJson(json['user'] ?? json['data'] ?? {}),
-      token: json['token'] ?? json['access_token'] ?? '',
+      user: UserModel.fromJson(json['usuario'] ?? json['user'] ?? json['data'] ?? {}),
+      token: json['access_token'] ?? json['token'] ?? '',
       refreshToken: json['refreshToken'] ?? json['refresh_token'],
     );
   }
