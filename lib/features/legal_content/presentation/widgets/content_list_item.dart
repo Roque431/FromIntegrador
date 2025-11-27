@@ -71,22 +71,22 @@ class ContentListItem extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (content.fuente != null || content.version != null) ...[
-                const SizedBox(height: 12),
+              if (content.fuente != null) ...[
+                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    if (content.version != null) ...[
-                      const Icon(Icons.numbers, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        'v${content.version}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
+                    ...[
+                    const Icon(Icons.numbers, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      'v${content.version}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
                       ),
-                      const SizedBox(width: 16),
-                    ],
+                    ),
+                    const SizedBox(width: 16),
+                  ],
                     if (content.fuente != null) ...[
                       const Icon(Icons.source, size: 14, color: Colors.grey),
                       const SizedBox(width: 4),

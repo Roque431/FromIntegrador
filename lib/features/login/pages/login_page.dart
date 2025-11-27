@@ -88,8 +88,16 @@ class _LoginPageState extends State<LoginPage> {
                                 // Actualizar estado de autenticación
                                 final appState = context.read<AppState>();
                                 appState.login();
-                                
-                                if (context.mounted) context.goNamed(AppRoutes.home);
+
+                                // Redirigir según tipo de usuario
+                                if (context.mounted) {
+                                  final user = loginNotifier.currentUser;
+                                  if (user != null && user.isLawyer) {
+                                    context.go('/lawyer');
+                                  } else {
+                                    context.goNamed(AppRoutes.home);
+                                  }
+                                }
                               } else {
                                 if (context.mounted) {
                                   final errorMessage = loginNotifier.errorMessage ?? 'No se pudo iniciar sesión con Google';
@@ -179,8 +187,14 @@ class _LoginPageState extends State<LoginPage> {
                                   // Actualizar estado de autenticación
                                   final appState = context.read<AppState>();
                                   appState.login();
-                                  
-                                  context.goNamed(AppRoutes.home);
+
+                                  // Redirigir según tipo de usuario
+                                  final user = loginNotifier.currentUser;
+                                  if (user != null && user.isLawyer) {
+                                    context.go('/lawyer');
+                                  } else {
+                                    context.goNamed(AppRoutes.home);
+                                  }
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

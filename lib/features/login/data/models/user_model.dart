@@ -9,6 +9,10 @@ class UserModel extends User {
     super.phone,
     super.isPro,
     super.createdAt,
+    super.userType,
+    super.profileImageUrl,
+    super.cedulaProfesional,
+    super.descripcionProfesional,
   });
 
   // From JSON - Compatible con backend LexIA
@@ -35,7 +39,13 @@ class UserModel extends User {
     if (fechaRegistro is String && fechaRegistro.isNotEmpty) {
       createdAt = DateTime.tryParse(fechaRegistro);
     }
-    
+
+    // Detectar tipo de usuario
+    final String? role = userData['role'] ?? userData['tipo'] ?? userData['userType'];
+    final UserType userType = role == 'lawyer' || role == 'abogado'
+        ? UserType.lawyer
+        : UserType.user;
+
     return UserModel(
       id: '${userData['id'] ?? userData['_id'] ?? ''}',
       email: '${userData['email'] ?? ''}',
@@ -44,6 +54,10 @@ class UserModel extends User {
       phone: userData['telefono']?.toString(),
       isPro: isPro,
       createdAt: createdAt,
+      userType: userType,
+      profileImageUrl: userData['profile_image_url'] ?? userData['foto_perfil'],
+      cedulaProfesional: userData['cedula_profesional'] ?? userData['cedulaProfesional'],
+      descripcionProfesional: userData['descripcion_profesional'] ?? userData['descripcionProfesional'] ?? userData['descripcion'],
     );
   }
 
@@ -57,6 +71,10 @@ class UserModel extends User {
       if (phone != null) 'phone': phone,
       'isPro': isPro,
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      'userType': userType == UserType.lawyer ? 'lawyer' : 'user',
+      if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+      if (cedulaProfesional != null) 'cedulaProfesional': cedulaProfesional,
+      if (descripcionProfesional != null) 'descripcionProfesional': descripcionProfesional,
     };
   }
 
@@ -69,6 +87,10 @@ class UserModel extends User {
     String? phone,
     bool? isPro,
     DateTime? createdAt,
+    UserType? userType,
+    String? profileImageUrl,
+    String? cedulaProfesional,
+    String? descripcionProfesional,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -78,6 +100,10 @@ class UserModel extends User {
       phone: phone ?? this.phone,
       isPro: isPro ?? this.isPro,
       createdAt: createdAt ?? this.createdAt,
+      userType: userType ?? this.userType,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      cedulaProfesional: cedulaProfesional ?? this.cedulaProfesional,
+      descripcionProfesional: descripcionProfesional ?? this.descripcionProfesional,
     );
   }
 
@@ -91,6 +117,10 @@ class UserModel extends User {
       phone: phone,
       isPro: isPro,
       createdAt: createdAt,
+      userType: userType,
+      profileImageUrl: profileImageUrl,
+      cedulaProfesional: cedulaProfesional,
+      descripcionProfesional: descripcionProfesional,
     );
   }
 }

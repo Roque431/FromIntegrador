@@ -5,16 +5,18 @@ import 'package:flutter_dotenv/flutter_dotenv.dart' as dotenv;
 
 class GoogleSignInService {
   final GoogleSignIn _googleSignIn;
-  final FirebaseAuth? _firebaseAuth;
 
-  GoogleSignInService() : 
-    _googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'],
-      // En web necesitamos el clientId explícito
-      clientId: kIsWeb ? dotenv.dotenv.env['GOOGLE_CLIENT_ID_WEB'] : null,
-    ),
-    _firebaseAuth = kIsWeb ? null : FirebaseAuth.instance {
-    
+  /// No accedemos a [FirebaseAuth.instance] en el constructor.
+  /// Usamos un getter perezoso para evitar excepciones si Firebase
+  /// no está inicializado aún al momento de crear el servicio.
+  FirebaseAuth? get _firebaseAuth => kIsWeb ? null : FirebaseAuth.instance;
+
+  GoogleSignInService()
+      : _googleSignIn = GoogleSignIn(
+          scopes: ['email', 'profile'],
+          // En web necesitamos el clientId explícito
+          clientId: kIsWeb ? dotenv.dotenv.env['GOOGLE_CLIENT_ID_WEB'] : null,
+        ) {
     print('🔧 GoogleSignIn configurado');
     print('   Platform: ${kIsWeb ? "Web (Solo Google)" : "Mobile (Google + Firebase)"}');
     print('   Scopes: email, profile');
@@ -46,7 +48,7 @@ class GoogleSignInService {
             idToken: googleAuth.idToken,
           );
           
-          final UserCredential userCredential = await _firebaseAuth!.signInWithCredential(credential);
+          final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
           print('✅ Firebase Auth exitoso: ${userCredential.user?.email}');
         } catch (firebaseError) {
           print('⚠️ Firebase Auth falló (continuando con Google): $firebaseError');
@@ -68,7 +70,7 @@ class GoogleSignInService {
       
       // Prioridad 1: Firebase (móvil)
       if (!kIsWeb && _firebaseAuth != null) {
-        final User? user = _firebaseAuth!.currentUser;
+        final User? user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           final String? idToken = await user.getIdToken();
           if (idToken != null) {

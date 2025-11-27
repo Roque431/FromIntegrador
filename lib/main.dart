@@ -4,13 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'core/di/injection_container.dart' as di;
-import 'core/application/app_state.dart';
+import 'core/application/app_state.dart'; 
 import 'features/login/presentation/providers/login_notifier.dart';
 import 'features/register/presentation/providers/register_notifier.dart';
 import 'features/register/presentation/providers/verify_email_notifier.dart';
 import 'features/home/presentation/providers/home_notifier.dart';
 import 'features/subscription/presentation/providers/subscription_notifier.dart';
-
 import 'myapp.dart';
 
 Future<void> main() async {

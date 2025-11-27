@@ -19,4 +19,12 @@ class AppRoutes {
   static const String legalContent = 'legal-content';
   static const String contentDetail = 'content-detail';
   static const String legalMap = 'legal-map';
+
+  // Rutas de abogado
+  static const String lawyerHome = 'lawyer-home';
+  static const String lawyerProfile = 'lawyer-profile';
+  static const String lawyerConsultations = 'lawyer-consultations';
+  static const String lawyerEditProfile = 'lawyer-edit-profile';
+  static const String lawyerSubscription = 'lawyer-subscription';
+  static const String lawyerForum = 'lawyer-forum';
 }

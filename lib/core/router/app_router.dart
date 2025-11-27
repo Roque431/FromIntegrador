@@ -6,10 +6,17 @@ import 'package:flutter_application_1/features/home/presentation/pages/home_page
 import 'package:flutter_application_1/features/legal_content/presentation/pages/legal_content_search_page.dart';
 import 'package:flutter_application_1/features/legal_content/presentation/pages/content_detail_page.dart';
 import 'package:flutter_application_1/features/location/presentation/pages/legal_map_page.dart';
+import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_home_page.dart';
+import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_profile_page.dart';
+import 'package:flutter_application_1/features/lawyer/presentation/pages/my_consultations_page.dart';
+import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_subscription_page.dart';
+import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_forum_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../application/app_state.dart';
 import 'routes.dart';
 import '../../features/login/pages/login_page.dart';
+import '../../features/login/presentation/providers/login_notifier.dart';
 import '../../features/register/presentation/pages/register_page.dart';
 import '../../features/register/presentation/pages/verify_email_page.dart';
 import '../../features/welcome/presentation/pages/welcome_page.dart';
@@ -119,6 +126,32 @@ class AppRouter {
         path: '/legal-map',
         builder: (context, state) => const LegalMapPage(),
       ),
+      // Rutas del abogado
+      GoRoute(
+        name: AppRoutes.lawyerHome,
+        path: '/lawyer',
+        builder: (context, state) => const LawyerHomePage(),
+      ),
+      GoRoute(
+        name: AppRoutes.lawyerProfile,
+        path: '/lawyer/profile',
+        builder: (context, state) => const LawyerProfilePage(),
+      ),
+      GoRoute(
+        name: AppRoutes.lawyerConsultations,
+        path: '/lawyer/consultations',
+        builder: (context, state) => const MyConsultationsPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.lawyerSubscription,
+        path: '/lawyer/subscription',
+        builder: (context, state) => const LawyerSubscriptionPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.lawyerForum,
+        path: '/lawyer/forum',
+        builder: (context, state) => const LawyerForumPage(),
+      ),
     ],
     
     // Habilitar redirect para manejar autenticación
@@ -126,17 +159,25 @@ class AppRouter {
       final isGoingToLogin = state.matchedLocation == '/login';
       final isGoingToRegister = state.matchedLocation == '/register';
       final isGoingToVerifyEmail = state.matchedLocation.startsWith('/verify-email');
-      
+
       if (appState.authStatus == AuthStatus.checking) return null;
-      
+
       if (!appState.isAuthenticated && !isGoingToLogin && !isGoingToRegister && !isGoingToVerifyEmail) {
         return '/login';
       }
-      
+
+      // Redirigir según tipo de usuario al hacer login
       if (appState.isAuthenticated && isGoingToLogin) {
+        // Obtener el LoginNotifier para saber el tipo de usuario
+        final loginNotifier = context.read<LoginNotifier>();
+        final user = loginNotifier.currentUser;
+
+        if (user != null && user.isLawyer) {
+          return '/lawyer';
+        }
         return '/home';
       }
-      
+
       return null;
     },
     
