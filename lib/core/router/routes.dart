@@ -27,4 +27,8 @@ class AppRoutes {
   static const String lawyerEditProfile = 'lawyer-edit-profile';
   static const String lawyerSubscription = 'lawyer-subscription';
   static const String lawyerForum = 'lawyer-forum';
+
+  // Rutas de verificación profesional
+  static const String lawyerVerification = 'lawyer-verification';
+  static const String businessRegistration = 'business-registration';
 }

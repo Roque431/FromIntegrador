@@ -134,29 +134,161 @@ class ProfilePage extends StatelessWidget {
                     },
                   ),
 
-                  ProfileMenuItem(
-                    icon: Icons.workspace_premium_outlined,
-                    iconColor: Colors.amber,
-                    title: 'Adquirir el plan Pro',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
+                  // Sección "¿Eres Profesional?"
+                  SizedBox(height: isWeb ? 32 : 24),
+                  
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isWeb ? 32 : 24),
+                    child: Text(
+                      '¿Eres Profesional?',
+                      style: TextStyle(
+                        color: colors.tertiary,
+                        fontSize: isWeb ? 18 : 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: const Text(
-                        'PRO',
-                        style: TextStyle(
-                          color: Colors.amber,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  
+                  SizedBox(height: isWeb ? 16 : 12),
+                  
+                  // Botón "Soy Abogado"
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isWeb ? 32 : 24),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          context.push('/lawyer-verification');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: colors.primary,
+                          elevation: 2,
+                          minimumSize: Size(double.infinity, isWeb ? 56 : 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: colors.primary.withValues(alpha: 0.1),
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.gavel,
+                                color: Colors.blue,
+                                size: isWeb ? 24 : 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Soy Abogado',
+                                    style: TextStyle(
+                                      fontSize: isWeb ? 16 : 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: colors.tertiary,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Ofrece tus servicios legales',
+                                    style: TextStyle(
+                                      fontSize: isWeb ? 14 : 12,
+                                      color: colors.tertiary.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: colors.tertiary.withValues(alpha: 0.4),
+                              size: 16,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    onTap: () {
-                      context.push('/subscription');
-                    },
                   ),
+                  
+                  // Botón "Tengo un Negocio"
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: isWeb ? 32 : 24),
+                    child: Container(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          context.push('/business-registration');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: colors.primary,
+                          elevation: 2,
+                          minimumSize: Size(double.infinity, isWeb ? 56 : 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: colors.primary.withValues(alpha: 0.1),
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.business,
+                                color: Colors.green,
+                                size: isWeb ? 24 : 20,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Tengo un Negocio',
+                                    style: TextStyle(
+                                      fontSize: isWeb ? 16 : 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: colors.tertiary,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Anuncia tus servicios',
+                                    style: TextStyle(
+                                      fontSize: isWeb ? 14 : 12,
+                                      color: colors.tertiary.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: colors.tertiary.withValues(alpha: 0.4),
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: isWeb ? 24 : 16),
 
                   ProfileMenuItem(
                     icon: Icons.info_outline,

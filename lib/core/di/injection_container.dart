@@ -51,6 +51,9 @@ import '../../features/legal_content/presentation/providers/legal_content_notifi
 // Location Feature
 import '../../features/location/data/datasources/location_datasource.dart';
 
+// Security - Secure Storage
+import '../storage/secure_token_repository.dart';
+
 final sl = GetIt.instance; // Service Locator
 
 Future<void> initializeDependencies() async {
@@ -75,6 +78,9 @@ Future<void> initializeDependencies() async {
   // Google Sign-In Service
   sl.registerLazySingleton<GoogleSignInService>(() => GoogleSignInService());
 
+  // Secure Token Repository (MSTG-STORAGE compliance)
+  sl.registerLazySingleton<SecureTokenRepository>(() => SecureTokenRepository());
+
   // ============================================
   // Login Feature
   // ============================================
@@ -89,6 +95,7 @@ Future<void> initializeDependencies() async {
     () => LoginRepositoryImpl(
       dataSource: sl(),
       sharedPreferences: sl(),
+      secureTokenRepository: sl(),
     ),
   );
 
@@ -121,6 +128,7 @@ Future<void> initializeDependencies() async {
       dataSource: sl(),
       loginDataSource: sl(),
       sharedPreferences: sl(),
+      secureTokenRepository: sl(),
     ),
   );
 

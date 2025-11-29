@@ -11,6 +11,8 @@ import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_
 import 'package:flutter_application_1/features/lawyer/presentation/pages/my_consultations_page.dart';
 import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_subscription_page.dart';
 import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_forum_page.dart';
+import 'package:flutter_application_1/features/profile/presentation/pages/lawyer_verification_page.dart';
+import 'package:flutter_application_1/features/profile/presentation/pages/business_registration_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../application/app_state.dart';
@@ -151,6 +153,18 @@ class AppRouter {
         name: AppRoutes.lawyerForum,
         path: '/lawyer/forum',
         builder: (context, state) => const LawyerForumPage(),
+      ),
+      
+      // Rutas de verificación profesional
+      GoRoute(
+        name: AppRoutes.lawyerVerification,
+        path: '/lawyer-verification',
+        builder: (context, state) => const LawyerVerificationPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.businessRegistration,
+        path: '/business-registration',
+        builder: (context, state) => const BusinessRegistrationPage(),
       ),
     ],
     

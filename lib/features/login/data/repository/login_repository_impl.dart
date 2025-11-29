@@ -3,18 +3,22 @@ import '../../domain/entities/user.dart';
 import '../../domain/repository/login_repository.dart';
 import '../datasource/login_datasource.dart';
 import '../models/login_request.dart';
+import '../../../../core/storage/secure_token_repository.dart';
 
 class LoginRepositoryImpl implements LoginRepository {
   final LoginDataSource dataSource;
   final SharedPreferences sharedPreferences;
+  final SecureTokenRepository _secureTokenRepository;
 
+  // Deprecated - mantenido solo para migración
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
 
   LoginRepositoryImpl({
     required this.dataSource,
     required this.sharedPreferences,
-  });
+    required SecureTokenRepository secureTokenRepository,
+  }) : _secureTokenRepository = secureTokenRepository;
 
   @override
   Future<({User user, String token})> login({
@@ -28,9 +32,12 @@ class LoginRepositoryImpl implements LoginRepository {
 
     final response = await dataSource.login(request);
 
-    // Guardar token en local
-    await saveToken(response.token);
-    await sharedPreferences.setString(_userIdKey, response.user.id);
+    // Guardar token en almacenamiento seguro (MSTG-STORAGE-1 compliance)
+    await _secureTokenRepository.saveAuthToken(response.token);
+    await _secureTokenRepository.saveUserId(response.user.id);
+
+    // Migrar y limpiar datos antiguos de SharedPreferences si existen
+    await _migrateAndCleanOldData();
 
     return (user: response.user, token: response.token);
   }
@@ -39,17 +46,20 @@ class LoginRepositoryImpl implements LoginRepository {
   Future<({User user, String token})> loginWithGoogle(String idToken) async {
     final response = await dataSource.loginWithGoogle(idToken);
 
-    // Guardar token en local
-    await saveToken(response.token);
-    await sharedPreferences.setString(_userIdKey, response.user.id);
+    // Guardar token en almacenamiento seguro (MSTG-STORAGE-1 compliance)
+    await _secureTokenRepository.saveAuthToken(response.token);
+    await _secureTokenRepository.saveUserId(response.user.id);
+
+    // Migrar y limpiar datos antiguos de SharedPreferences si existen
+    await _migrateAndCleanOldData();
 
     return (user: response.user, token: response.token);
   }
 
   @override
   Future<User> getCurrentUser() async {
-    // Si hay token almacenado, inicializarlo en el datasource/apiClient
-    final token = sharedPreferences.getString(_tokenKey);
+    // Obtener token desde almacenamiento seguro
+    final token = await _secureTokenRepository.getAuthToken();
     if (token != null && token.isNotEmpty) {
       try {
         dataSource.setAuthToken(token);
@@ -77,22 +87,46 @@ class LoginRepositoryImpl implements LoginRepository {
   @override
   Future<void> logout() async {
     await dataSource.logout();
-    await clearToken();
+    
+    // Limpiar tanto almacenamiento seguro como SharedPreferences (migración)
+    await _secureTokenRepository.clearAllAuthData();
+    await sharedPreferences.remove(_tokenKey);
     await sharedPreferences.remove(_userIdKey);
   }
 
   @override
   Future<String?> getStoredToken() async {
-    return sharedPreferences.getString(_tokenKey);
+    return await _secureTokenRepository.getAuthToken();
   }
 
   @override
   Future<void> saveToken(String token) async {
-    await sharedPreferences.setString(_tokenKey, token);
+    await _secureTokenRepository.saveAuthToken(token);
   }
 
   @override
   Future<void> clearToken() async {
-    await sharedPreferences.remove(_tokenKey);
+    await _secureTokenRepository.clearAllAuthData();
+  }
+
+  /// Migra datos de SharedPreferences a SecureStorage y limpia datos antiguos
+  /// Solo se ejecuta una vez durante el proceso de login
+  Future<void> _migrateAndCleanOldData() async {
+    try {
+      // Verificar si hay datos antiguos en SharedPreferences
+      final oldToken = sharedPreferences.getString(_tokenKey);
+      final oldUserId = sharedPreferences.getString(_userIdKey);
+      
+      if (oldToken != null || oldUserId != null) {
+        // Limpiar datos antiguos de SharedPreferences
+        await sharedPreferences.remove(_tokenKey);
+        await sharedPreferences.remove(_userIdKey);
+        
+        print('🔄 Datos migrados de SharedPreferences a almacenamiento seguro');
+      }
+    } catch (e) {
+      print('⚠️ Error durante migración de datos: $e');
+      // No lanzar error - la migración no debe interrumpir el flujo principal
+    }
   }
 }

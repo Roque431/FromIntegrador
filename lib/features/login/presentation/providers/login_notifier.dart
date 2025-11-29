@@ -57,16 +57,7 @@ class LoginNotifier extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      // 🧪 MODO DEMO: Si son las credenciales de prueba, hacer login simulado
-      if (_isDemoCredentials(email, password)) {
-        await Future.delayed(const Duration(milliseconds: 800)); // Simular delay de red
-        _currentUser = _createDemoUser(email);
-        _state = LoginState.authenticated;
-        notifyListeners();
-        return true;
-      }
-
-      // Login real con backend
+      // Login con backend (eliminado modo demo por seguridad MSTG-STORAGE)
       final result = await loginUseCase(
         email: email,
         password: password,
@@ -84,41 +75,6 @@ class LoginNotifier extends ChangeNotifier {
       return false;
     }
   }
-
-  // ==========================================
-  // Métodos auxiliares para modo demo
-  // ==========================================
-  bool _isDemoCredentials(String email, String password) {
-    return (email == 'usuario@lexia.com' && password == 'Usuario123') ||
-           (email == 'abogado@lexia.com' && password == 'Abogado123');
-  }
-
-  User _createDemoUser(String email) {
-    if (email == 'abogado@lexia.com') {
-      return const User(
-        id: 'demo-lawyer-1',
-        email: 'abogado@lexia.com',
-        name: 'Ana María',
-        lastName: 'González',
-        phone: '5551234567',
-        isPro: true,
-        userType: UserType.lawyer,
-        cedulaProfesional: '8765432',
-        descripcionProfesional: 'Abogada especializada en derecho administrativo y de tránsito con más de 8 años de experiencia...',
-      );
-    } else {
-      return const User(
-        id: 'demo-user-1',
-        email: 'usuario@lexia.com',
-        name: 'Carlos',
-        lastName: 'Ramírez',
-        phone: '5559876543',
-        isPro: false,
-        userType: UserType.user,
-      );
-    }
-  }
-
 
   // ==========================================
   // Logout

@@ -7,12 +7,15 @@ import '../models/send_verification_request.dart';
 import '../models/verify_email_request.dart';
 import '../../../login/data/datasource/login_datasource.dart';
 import '../../../login/data/models/login_request.dart';
+import '../../../../core/storage/secure_token_repository.dart';
 
 class RegisterRepositoryImpl implements RegisterRepository {
   final RegisterDataSource dataSource;
   final LoginDataSource loginDataSource; // para login automático
   final SharedPreferences sharedPreferences;
+  final SecureTokenRepository _secureTokenRepository;
 
+  // Deprecated - mantenido solo para migración
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
 
@@ -20,7 +23,8 @@ class RegisterRepositoryImpl implements RegisterRepository {
     required this.dataSource,
     required this.loginDataSource,
     required this.sharedPreferences,
-  });
+    required SecureTokenRepository secureTokenRepository,
+  }) : _secureTokenRepository = secureTokenRepository;
 
   @override
   Future<({User user, String token})> register({
@@ -46,8 +50,12 @@ class RegisterRepositoryImpl implements RegisterRepository {
       LoginRequest(email: email, password: password),
     );
 
-    await saveToken(loginResp.token);
-    await sharedPreferences.setString(_userIdKey, loginResp.user.id);
+    // Guardar en almacenamiento seguro (MSTG-STORAGE-1 compliance)
+    await _secureTokenRepository.saveAuthToken(loginResp.token);
+    await _secureTokenRepository.saveUserId(loginResp.user.id);
+
+    // Migrar y limpiar datos antiguos si existen
+    await _migrateAndCleanOldData();
 
     // Convert UserModel to User entity
     final user = User(
@@ -65,12 +73,31 @@ class RegisterRepositoryImpl implements RegisterRepository {
 
   @override
   Future<void> saveToken(String token) async {
-    await sharedPreferences.setString(_tokenKey, token);
+    await _secureTokenRepository.saveAuthToken(token);
   }
 
   @override
   Future<String?> getStoredToken() async {
-    return sharedPreferences.getString(_tokenKey);
+    return await _secureTokenRepository.getAuthToken();
+  }
+
+  /// Migra datos de SharedPreferences a SecureStorage y limpia datos antiguos
+  Future<void> _migrateAndCleanOldData() async {
+    try {
+      // Verificar si hay datos antiguos en SharedPreferences
+      final oldToken = sharedPreferences.getString(_tokenKey);
+      final oldUserId = sharedPreferences.getString(_userIdKey);
+      
+      if (oldToken != null || oldUserId != null) {
+        // Limpiar datos antiguos de SharedPreferences
+        await sharedPreferences.remove(_tokenKey);
+        await sharedPreferences.remove(_userIdKey);
+        
+        print('🔄 Datos de registro migrados a almacenamiento seguro');
+      }
+    } catch (e) {
+      print('⚠️ Error durante migración en registro: $e');
+    }
   }
 
   @override
