@@ -12,7 +12,7 @@ import 'package:flutter_application_1/features/lawyer/presentation/pages/my_cons
 import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_subscription_page.dart';
 import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_forum_page.dart';
 import 'package:flutter_application_1/features/profile/presentation/pages/lawyer_verification_page.dart';
-import 'package:flutter_application_1/features/profile/presentation/pages/business_registration_page.dart';
+import 'package:flutter_application_1/features/business/presentation/pages/business_registration_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../application/app_state.dart';
