@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
 import '../../../core/application/app_state.dart';
+import '../../../core/widgets/responsive_text_field.dart';
+import '../../../core/widgets/responsive_widgets.dart';
+import '../../../core/widgets/custom_snackbar.dart';
 import 'package:provider/provider.dart';
 import '../presentation/providers/login_notifier.dart';
-import '../widgets/login_button.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,6 +18,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -26,221 +29,160 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 600;
+    
+    // Detectar si es tablet/desktop o móvil
+    final isWide = size.width > 600;
+    final isDesktop = size.width > 900;
+    
+    // Calcular tamaños responsivos
+    final logoSize = isDesktop ? 120.0 : (isWide ? 100.0 : 80.0);
+    final titleSize = isDesktop ? 32.0 : (isWide ? 28.0 : 24.0);
+    final subtitleSize = isDesktop ? 18.0 : (isWide ? 16.0 : 14.0);
+    final cardPadding = isDesktop ? 32.0 : (isWide ? 24.0 : 20.0);
+    final maxWidth = isDesktop ? 480.0 : (isWide ? 420.0 : 380.0);
 
     return Scaffold(
-      backgroundColor: colors.primary,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
-              vertical: isWeb ? 40 : 24,
-              horizontal: isWeb ? 24 : 16,
+              vertical: ResponsiveSize.verticalPadding(context),
+              horizontal: ResponsiveSize.horizontalPadding(context),
             ),
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: isWeb ? 450 : 380),
+              constraints: BoxConstraints(maxWidth: maxWidth),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
                   Image.asset(
                     'lib/img/portada.png',
-                    width: isWeb ? 110 : 90,
-                    height: isWeb ? 110 : 90,
+                    width: logoSize,
+                    height: logoSize,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.gavel,
+                      size: logoSize,
+                      color: colorScheme.primary,
+                    ),
                   ),
-                  SizedBox(height: isWeb ? 16 : 12),
+                  SizedBox(height: isWide ? 16 : 12),
+                  
+                  // Título
                   Text(
                     'LexIA',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.tertiary,
-                          fontSize: isWeb ? 28 : null,
-                        ),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                      fontSize: titleSize,
+                    ),
                   ),
-                  SizedBox(height: isWeb ? 20 : 16),
+                  SizedBox(height: isWide ? 12 : 8),
+                  
+                  // Subtítulo
                   Text(
                     'La justicia empieza con el conocimiento.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colors.tertiary.withValues(alpha: 0.85),
-                          fontSize: isWeb ? 18 : null,
-                        ),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontSize: subtitleSize,
+                    ),
                   ),
-                  SizedBox(height: isWeb ? 32 : 24),
+                  SizedBox(height: isWide ? 32 : 24),
 
                   // Card contenedora
-                  Material(
-                    color: Colors.white,
-                    elevation: isWeb ? 8 : 6,
-                    borderRadius: BorderRadius.circular(isWeb ? 20 : 16),
-                    child: Padding(
-                      padding: EdgeInsets.all(isWeb ? 24.0 : 16.0),
-                      child: Column(
-                        children: [
-                          LoginButton(
-                            text: 'Continuar con Google',
-                            onPressed: () async {
-                              final loginNotifier = context.read<LoginNotifier>();
-                              final ok = await loginNotifier.loginWithGoogle();
-                              if (ok) {
-                                // Actualizar estado de autenticación
-                                final appState = context.read<AppState>();
-                                appState.login();
-
-                                // Redirigir según tipo de usuario
-                                if (context.mounted) {
-                                  final user = loginNotifier.currentUser;
-                                  if (user != null && user.isLawyer) {
-                                    context.go('/lawyer');
-                                  } else {
-                                    context.goNamed(AppRoutes.home);
-                                  }
-                                }
-                              } else {
-                                if (context.mounted) {
-                                  final errorMessage = loginNotifier.errorMessage ?? 'No se pudo iniciar sesión con Google';
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(errorMessage),
-                                      backgroundColor: Colors.red,
-                                      duration: const Duration(seconds: 4),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            backgroundColor: colors.secondary,
-                            textColor: Colors.white,
+                  ResponsiveCard(
+                    padding: EdgeInsets.all(cardPadding),
+                    child: Column(
+                      children: [
+                        // Botón Google
+                        ResponsiveButton(
+                          text: 'Continuar con Google',
+                          icon: Icon(
+                            Icons.g_mobiledata,
+                            size: 24,
+                            color: colorScheme.onPrimary,
                           ),
-                          const SizedBox(height: 12),
-                          Text('o', style: TextStyle(color: colors.tertiary.withValues(alpha: 0.6))),
-                          const SizedBox(height: 12),
-                          
-                          // Campo Email
-                          TextField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: 'Ingresa tu correo electrónico',
-                              hintStyle: TextStyle(color: Colors.grey.shade400),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: colors.secondary, width: 2),
+                          isLoading: _isLoading,
+                          onPressed: () => _handleGoogleLogin(context),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Divider con "o"
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: colorScheme.outline.withValues(alpha: 0.5),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          
-                          // Campo Contraseña
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              hintText: 'Ingresa tu contraseña',
-                              hintStyle: TextStyle(color: Colors.grey.shade400),
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: colors.secondary, width: 2),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'o',
+                                style: TextStyle(
+                                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          
-                          // Botón Login con Email
-                          LoginButton(
-                            text: 'Iniciar Sesión',
-                            onPressed: () async {
-                              // Validar campos
-                              if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Por favor ingresa email y contraseña'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-
-                              // Intentar login
-                              final loginNotifier = context.read<LoginNotifier>();
-                              final success = await loginNotifier.login(
-                                email: _emailController.text.trim(),
-                                password: _passwordController.text,
-                              );
-
-                              if (context.mounted) {
-                                if (success) {
-                                  // Actualizar estado de autenticación
-                                  final appState = context.read<AppState>();
-                                  appState.login();
-
-                                  // Redirigir según tipo de usuario
-                                  final user = loginNotifier.currentUser;
-                                  if (user != null && user.isLawyer) {
-                                    context.go('/lawyer');
-                                  } else {
-                                    context.goNamed(AppRoutes.home);
-                                  }
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(loginNotifier.errorMessage ?? 'Error al iniciar sesión'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            backgroundColor: colors.secondary,
-                            textColor: Colors.white,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Al continuar aceptas las Políticas de Privacidad.',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: colors.tertiary.withValues(alpha: 0.7)),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Botón de Registrar
-                          OutlinedButton(
-                            onPressed: () {
-                              context.goNamed(AppRoutes.register);
-                            },
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
-                              side: BorderSide(color: colors.secondary),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            Expanded(
+                              child: Divider(
+                                color: colorScheme.outline.withValues(alpha: 0.5),
                               ),
                             ),
-                            child: Text(
-                              'Registrar',
-                              style: TextStyle(
-                                color: colors.secondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Campo Email
+                        ResponsiveTextField(
+                          controller: _emailController,
+                          hintText: 'Ingresa tu correo electrónico',
+                          keyboardType: TextInputType.emailAddress,
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        // Campo Contraseña con toggle de visibilidad
+                        PasswordTextField(
+                          controller: _passwordController,
+                          hintText: 'Ingresa tu contraseña',
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Botón Login
+                        ResponsiveButton(
+                          text: 'Iniciar Sesión',
+                          isLoading: _isLoading,
+                          onPressed: () => _handleEmailLogin(context),
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        // Texto de políticas
+                        Text(
+                          'Al continuar aceptas las Políticas de Privacidad.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Botón de Registrar
+                        ResponsiveButton(
+                          text: 'Crear cuenta nueva',
+                          isOutlined: true,
+                          onPressed: () {
+                            context.goNamed(AppRoutes.register);
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -249,6 +191,102 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _handleGoogleLogin(BuildContext context) async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final loginNotifier = context.read<LoginNotifier>();
+      final ok = await loginNotifier.loginWithGoogle();
+      
+      if (ok && context.mounted) {
+        final appState = context.read<AppState>();
+        appState.login();
+
+        // Mostrar alerta de éxito
+        LexiaAlert.success(
+          context,
+          title: '¡Bienvenido de nuevo!',
+          message: 'Has iniciado sesión correctamente con Google',
+        );
+
+        final user = loginNotifier.currentUser;
+        if (user != null && user.isLawyer) {
+          context.go('/lawyer');
+        } else {
+          context.goNamed(AppRoutes.home);
+        }
+      } else if (context.mounted) {
+        final errorMessage = loginNotifier.errorMessage ?? 'No se pudo iniciar sesión con Google';
+        LexiaAlert.error(
+          context,
+          title: 'Error de autenticación',
+          message: errorMessage,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleEmailLogin(BuildContext context) async {
+    // Validar campos
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      LexiaAlert.warning(
+        context,
+        title: 'Campos incompletos',
+        message: 'Por favor ingresa tu email y contraseña',
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    
+    try {
+      final loginNotifier = context.read<LoginNotifier>();
+      final success = await loginNotifier.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (context.mounted) {
+        if (success) {
+          final appState = context.read<AppState>();
+          appState.login();
+
+          // Mostrar alerta de éxito
+          LexiaAlert.success(
+            context,
+            title: '¡Inicio de sesión exitoso!',
+            message: 'Bienvenido a LexIA',
+          );
+
+          final user = loginNotifier.currentUser;
+          if (user != null && user.isLawyer) {
+            context.go('/lawyer');
+          } else {
+            context.goNamed(AppRoutes.home);
+          }
+        } else {
+          LexiaAlert.error(
+            context,
+            title: 'Error al iniciar sesión',
+            message: loginNotifier.errorMessage ?? 'Verifica tus credenciales',
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(BuildContext context, String message) {
+    LexiaAlert.error(
+      context,
+      title: 'Error',
+      message: message,
     );
   }
 }

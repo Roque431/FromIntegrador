@@ -10,6 +10,12 @@ import 'features/register/presentation/providers/register_notifier.dart';
 import 'features/register/presentation/providers/verify_email_notifier.dart';
 import 'features/home/presentation/providers/home_notifier.dart';
 import 'features/subscription/presentation/providers/subscription_notifier.dart';
+import 'features/forum/presentation/providers/foro_notifier.dart';
+import 'features/forum/data/repository/foro_repository.dart';
+import 'features/history/presentation/providers/historial_notifier.dart';
+import 'features/history/data/repository/historial_repository.dart';
+import 'features/chat/presentation/providers/chat_privado_notifier.dart';
+import 'features/chat/data/repository/chat_privado_repository.dart';
 import 'myapp.dart';
 
 Future<void> main() async {
@@ -52,6 +58,54 @@ Future<void> main() async {
         
         // Subscription (Transacciones y pagos)
         ChangeNotifierProvider(create: (_) => di.sl<SubscriptionNotifier>()),
+
+        // Forum - ProxyProvider que obtiene userId del LoginRepository
+        ChangeNotifierProxyProvider<LoginNotifier, ForoNotifier>(
+          create: (_) => ForoNotifier(
+            repository: di.sl<ForoRepository>(),
+            currentUserId: null,
+          ),
+          update: (_, loginNotifier, previous) {
+            // Obtener userId asíncronamente y crear nuevo notifier
+            return ForoNotifier(
+              repository: di.sl<ForoRepository>(),
+              currentUserId: loginNotifier.currentUserId,
+            );
+          },
+        ),
+
+        // History - ProxyProvider que obtiene userId del LoginRepository
+        ChangeNotifierProxyProvider<LoginNotifier, HistorialNotifier>(
+          create: (_) => HistorialNotifier(
+            repository: di.sl<HistorialRepository>(),
+            currentUserId: null,
+          ),
+          update: (_, loginNotifier, previous) {
+            return HistorialNotifier(
+              repository: di.sl<HistorialRepository>(),
+              currentUserId: loginNotifier.currentUserId,
+            );
+          },
+        ),
+
+        // Chat Privado - ProxyProvider que obtiene userId del LoginRepository
+        ChangeNotifierProxyProvider<LoginNotifier, ChatPrivadoNotifier>(
+          create: (_) => ChatPrivadoNotifier(
+            repository: di.sl<ChatPrivadoRepository>(),
+            currentUserId: null,
+          ),
+          update: (_, loginNotifier, previous) {
+            // Reusar la instancia anterior para no perder el estado
+            if (previous != null) {
+              previous.setCurrentUserId(loginNotifier.currentUserId ?? '');
+              return previous;
+            }
+            return ChatPrivadoNotifier(
+              repository: di.sl<ChatPrivadoRepository>(),
+              currentUserId: loginNotifier.currentUserId,
+            );
+          },
+        ),
       ],
       child: const MyApp(),
     ),

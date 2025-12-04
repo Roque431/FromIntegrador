@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/responsive_widgets.dart';
+import '../../../../core/widgets/responsive_text_field.dart';
 
 class LawyerVerificationPage extends StatefulWidget {
   const LawyerVerificationPage({super.key});
@@ -61,27 +63,32 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
     _descriptionController.dispose();
     super.dispose();
   }
+
+  @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 600;
 
     return Scaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: colors.surface,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colors.onSurface),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () => context.pop(),
         ),
         title: Text(
           'Verificación de Abogado',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontWeight: FontWeight.w600,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
           ),
         ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Center(
@@ -89,99 +96,27 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
             constraints: BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
             child: Form(
               key: _formKey,
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  colorScheme: colors.copyWith(primary: colors.primary),
-                ),
-                child: Stepper(
-                  currentStep: _currentStep,
-                  onStepTapped: (step) {
-                    setState(() {
-                      _currentStep = step;
-                    });
-                  },
-                  controlsBuilder: (context, details) {
-                    final isFirstStep = details.stepIndex == 0;
-                    final isLastStep = details.stepIndex == 2;
-                    
-                    return Row(
-                      children: [
-                        if (!isLastStep)
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                if (details.stepIndex == 0 && !_formKey.currentState!.validate()) {
-                                  return;
-                                }
-                                if (details.stepIndex < 2) {
-                                  setState(() {
-                                    _currentStep++;
-                                  });
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colors.secondary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: Text(details.stepIndex == 1 ? 'Finalizar' : 'Siguiente'),
-                            ),
-                          ),
-                        if (isLastStep)
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _submitVerification(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colors.secondary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: const Text('Continuar con Suscripción'),
-                            ),
-                          ),
-                        if (!isFirstStep) const SizedBox(width: 8),
-                        if (!isFirstStep)
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _currentStep--;
-                              });
-                            },
-                            child: Text(
-                              'Atrás',
-                              style: TextStyle(color: colors.tertiary),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                  steps: [
-                    Step(
-                      title: Text(
-                        'Datos',
-                        style: TextStyle(color: colors.onSurface),
+              child: Column(
+                children: [
+                  // Step indicator
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildStepIndicator(colorScheme),
+                  ),
+                  
+                  // Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveSize.horizontalPadding(context),
                       ),
-                      content: _buildPersonalInfoStep(),
-                      isActive: _currentStep >= 0,
+                      child: _buildCurrentStep(),
                     ),
-                    Step(
-                      title: Text(
-                        'Documentos',
-                        style: TextStyle(color: colors.onSurface),
-                      ),
-                      content: _buildDocumentsStep(),
-                      isActive: _currentStep >= 1,
-                    ),
-                    Step(
-                      title: Text(
-                        'Plan',
-                        style: TextStyle(color: colors.onSurface),
-                      ),
-                      content: _buildPlanStep(),
-                      isActive: _currentStep >= 2,
-                    ),
-                  ],
-                ),
+                  ),
+                  
+                  // Navigation buttons
+                  _buildNavigationButtons(colorScheme),
+                ],
               ),
             ),
           ),
@@ -190,352 +125,450 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
     );
   }
 
-  Widget _buildPersonalInfoStep() {
-    final colors = Theme.of(context).colorScheme;
+  Widget _buildStepIndicator(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        _buildStepCircle(0, 'Datos', colorScheme),
+        Expanded(child: _buildStepLine(0, colorScheme)),
+        _buildStepCircle(1, 'Documentos', colorScheme),
+        Expanded(child: _buildStepLine(1, colorScheme)),
+        _buildStepCircle(2, 'Plan', colorScheme),
+      ],
+    );
+  }
+
+  Widget _buildStepCircle(int step, String label, ColorScheme colorScheme) {
+    final isActive = _currentStep >= step;
+    final isCurrent = _currentStep == step;
     
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Información Personal',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Nombre completo
-        TextFormField(
-          controller: _fullNameController,
-          decoration: const InputDecoration(
-            labelText: 'Nombre completo *',
-            hintText: 'Ej: Ana María González López',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'El nombre es requerido';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Correo electrónico
-        TextFormField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(
-            labelText: 'Correo electrónico *',
-            hintText: 'tu@email.com',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'El correo es requerido';
-            }
-            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-              return 'Ingresa un correo válido';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Teléfono
-        TextFormField(
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(
-            labelText: 'Teléfono de contacto *',
-            hintText: '(961) 123-4567',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'El teléfono es requerido';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 20),
-        
-        Text(
-          'Información Profesional',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Cédula profesional
-        TextFormField(
-          controller: _licenseController,
-          decoration: const InputDecoration(
-            labelText: 'Cédula profesional *',
-            hintText: 'Ej: 8766432',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'La cédula profesional es requerida';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Años de experiencia
-        DropdownButtonFormField<String>(
-          value: _experienceYears,
-          decoration: const InputDecoration(
-            labelText: 'Años de experiencia *',
-            border: OutlineInputBorder(),
-          ),
-          items: _experienceOptions.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value),
-            );
-          }).toList(),
-          onChanged: (String? value) {
-            setState(() {
-              _experienceYears = value;
-            });
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Selecciona años de experiencia';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Tipo de práctica
-        Text(
-          'Tipo de práctica *',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: RadioListTile<String>(
-                title: const Text('Independiente'),
-                value: 'Independiente',
-                groupValue: _practiceType,
-                onChanged: (String? value) {
-                  setState(() {
-                    _practiceType = value!;
-                  });
-                },
-              ),
-            ),
-            Expanded(
-              child: RadioListTile<String>(
-                title: const Text('Bufete'),
-                value: 'Bufete',
-                groupValue: _practiceType,
-                onChanged: (String? value) {
-                  setState(() {
-                    _practiceType = value!;
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        
-        // Nombre del despacho (opcional)
-        if (_practiceType == 'Bufete')
-          TextFormField(
-            controller: _officeNameController,
-            decoration: const InputDecoration(
-              labelText: 'Nombre del despacho/bufete (opcional)',
-              hintText: 'Ej: González & Asociados',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        if (_practiceType == 'Bufete') const SizedBox(height: 16),
-        
-        // Dirección del despacho
-        TextFormField(
-          controller: _officeAddressController,
-          decoration: const InputDecoration(
-            labelText: 'Dirección del despacho *',
-            hintText: 'Calle, número, colonia',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 2,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'La dirección es requerida';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        
-        // Especialidades
-        Text(
-          'Especialidades (máx. 5) *',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 8),
         Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            border: Border.all(color: colors.outline),
-            borderRadius: BorderRadius.circular(4),
+            color: isActive ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+            shape: BoxShape.circle,
+            border: isCurrent ? Border.all(color: colorScheme.primary, width: 2) : null,
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedSpecialty,
-              isExpanded: true,
-              items: _specialties.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? value) {
-                setState(() {
-                  _selectedSpecialty = value!;
-                });
-              },
-            ),
+          child: Center(
+            child: isActive && !isCurrent
+                ? Icon(Icons.check, color: colorScheme.onPrimary, size: 20)
+                : Text(
+                    '${step + 1}',
+                    style: TextStyle(
+                      color: isActive ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // Descripción profesional
-        TextFormField(
-          controller: _descriptionController,
-          decoration: const InputDecoration(
-            labelText: 'Descripción profesional *',
-            hintText: 'Cuéntanos sobre tu experiencia, logros y áreas de especialización...',
-            border: OutlineInputBorder(),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: isActive ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
           ),
-          maxLines: 4,
-          maxLength: 500,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'La descripción profesional es requerida';
-            }
-            if (value.length < 100) {
-              return 'La descripción debe tener al menos 100 caracteres';
-            }
-            return null;
-          },
         ),
       ],
     );
   }
 
-  Widget _buildDocumentsStep() {
-    final colors = Theme.of(context).colorScheme;
+  Widget _buildStepLine(int step, ColorScheme colorScheme) {
+    final isCompleted = _currentStep > step;
+    return Container(
+      height: 2,
+      margin: const EdgeInsets.only(bottom: 20),
+      color: isCompleted ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3),
+    );
+  }
+
+  Widget _buildNavigationButtons(ColorScheme colorScheme) {
+    final isFirstStep = _currentStep == 0;
+    final isLastStep = _currentStep == 2;
+    
+    return Container(
+      padding: EdgeInsets.all(ResponsiveSize.horizontalPadding(context)),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Row(
+        children: [
+          if (!isFirstStep)
+            Expanded(
+              child: ResponsiveButton(
+                text: 'Atrás',
+                isOutlined: true,
+                onPressed: () {
+                  setState(() => _currentStep--);
+                },
+              ),
+            ),
+          if (!isFirstStep) const SizedBox(width: 12),
+          Expanded(
+            flex: isFirstStep ? 1 : 2,
+            child: ResponsiveButton(
+              text: isLastStep ? 'Finalizar Registro' : 'Siguiente',
+              onPressed: () {
+                if (_currentStep == 0 && !_formKey.currentState!.validate()) {
+                  return;
+                }
+                if (isLastStep) {
+                  _submitVerification();
+                } else {
+                  setState(() => _currentStep++);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return _buildPersonalInfoStep();
+      case 1:
+        return _buildDocumentsStep();
+      case 2:
+        return _buildPlanStep();
+      default:
+        return _buildPersonalInfoStep();
+    }
+  }
+
+  Widget _buildPersonalInfoStep() {
+    final colorScheme = Theme.of(context).colorScheme;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Documentos Requeridos',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: colors.tertiary,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        Text(
-          'Para completar la verificación, necesitamos los siguientes documentos:',
-          style: TextStyle(
-            color: colors.tertiary,
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        _buildDocumentItem(
-          icon: Icons.card_membership,
-          title: 'Cédula Profesional',
-          description: 'Foto clara de tu cédula profesional',
-          required: true,
-          color: colors.secondary,
-        ),
-        const SizedBox(height: 12),
-
-        _buildDocumentItem(
-          icon: Icons.badge,
-          title: 'Identificación Oficial',
-          description: 'INE, pasaporte o licencia de conducir',
-          required: true,
-          color: colors.tertiary,
-        ),
-        const SizedBox(height: 12),
-
-        _buildDocumentItem(
-          icon: Icons.business,
-          title: 'Comprobante de Domicilio',
-          description: 'No mayor a 3 meses',
-          required: true,
-          color: const Color(0xFFB8907D),
-        ),
-        const SizedBox(height: 20),
-        
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-          ),
+        ResponsiveCard(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                'Información Personal',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              ResponsiveTextField(
+                controller: _fullNameController,
+                hintText: 'Nombre completo *',
+                prefixIcon: Icon(Icons.person_outline, color: colorScheme.primary),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'El nombre es requerido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              
+              ResponsiveTextField(
+                controller: _emailController,
+                hintText: 'Correo electrónico *',
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icon(Icons.email_outlined, color: colorScheme.primary),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'El correo es requerido';
+                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return 'Ingresa un correo válido';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              
+              ResponsiveTextField(
+                controller: _phoneController,
+                hintText: 'Teléfono de contacto *',
+                keyboardType: TextInputType.phone,
+                prefixIcon: Icon(Icons.phone_outlined, color: colorScheme.primary),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'El teléfono es requerido';
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        ResponsiveCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Información Profesional',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              ResponsiveTextField(
+                controller: _licenseController,
+                hintText: 'Cédula profesional *',
+                prefixIcon: Icon(Icons.badge_outlined, color: colorScheme.primary),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'La cédula es requerida';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              
+              _buildDropdown(
+                value: _experienceYears,
+                hint: 'Años de experiencia *',
+                items: _experienceOptions,
+                onChanged: (value) => setState(() => _experienceYears = value),
+                icon: Icons.work_outline,
+              ),
+              const SizedBox(height: 16),
+              
+              Text(
+                'Tipo de práctica',
+                style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Información Importante',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade900,
-                      fontSize: 15,
-                    ),
-                  ),
+                  Expanded(child: _buildPracticeChip('Independiente', colorScheme)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildPracticeChip('Bufete', colorScheme)),
                 ],
+              ),
+              const SizedBox(height: 12),
+              
+              if (_practiceType == 'Bufete') ...[
+                ResponsiveTextField(
+                  controller: _officeNameController,
+                  hintText: 'Nombre del bufete (opcional)',
+                  prefixIcon: Icon(Icons.business, color: colorScheme.primary),
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              ResponsiveTextField(
+                controller: _officeAddressController,
+                hintText: 'Dirección del despacho *',
+                prefixIcon: Icon(Icons.location_on_outlined, color: colorScheme.primary),
+                maxLines: 2,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'La dirección es requerida';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              
+              Text(
+                'Especialidades (máx. 5) *',
+                style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              _buildDropdown(
+                value: _selectedSpecialty,
+                hint: 'Seleccionar especialidad',
+                items: _specialties,
+                onChanged: (value) => setState(() => _selectedSpecialty = value!),
+                icon: Icons.gavel,
+              ),
+              const SizedBox(height: 12),
+              
+              ResponsiveTextField(
+                controller: _descriptionController,
+                hintText: 'Descripción profesional *',
+                prefixIcon: Icon(Icons.description_outlined, color: colorScheme.primary),
+                maxLines: 4,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'La descripción es requerida';
+                  if (value.length < 100) return 'Mínimo 100 caracteres';
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildPracticeChip(String type, ColorScheme colorScheme) {
+    final isSelected = _practiceType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _practiceType = type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primary : colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            type,
+            style: TextStyle(
+              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String? value,
+    required String hint,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+    required IconData icon,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DropdownButtonFormField<String>(
+      value: value,
+      dropdownColor: colorScheme.surfaceContainerHighest,
+      style: TextStyle(color: colorScheme.onSurface),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        prefixIcon: Icon(icon, color: colorScheme.primary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
+        filled: true,
+        fillColor: colorScheme.surface,
+      ),
+      items: items.map((e) => DropdownMenuItem(
+        value: e,
+        child: Text(e, style: TextStyle(color: colorScheme.onSurface)),
+      )).toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildDocumentsStep() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ResponsiveCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Documentos Requeridos',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                '• Los documentos serán revisados por nuestro equipo de verificación\n'
-                '• El proceso de verificación toma entre 24-48 horas\n'
-                '• Te notificaremos por email el resultado\n'
-                '• Todos los documentos son tratados de forma confidencial',
+                'Para completar la verificación, necesitamos los siguientes documentos:',
                 style: TextStyle(
-                  color: Colors.blue.shade900,
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              _buildDocumentItem(
+                icon: Icons.card_membership,
+                title: 'Cédula Profesional',
+                description: 'Foto clara de tu cédula profesional',
+                required: true,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(height: 12),
+
+              _buildDocumentItem(
+                icon: Icons.badge,
+                title: 'Identificación Oficial',
+                description: 'INE, pasaporte o licencia de conducir',
+                required: true,
+                color: colorScheme.secondary,
+              ),
+              const SizedBox(height: 12),
+
+              _buildDocumentItem(
+                icon: Icons.business,
+                title: 'Comprobante de Domicilio',
+                description: 'No mayor a 3 meses',
+                required: true,
+                color: Colors.teal,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        ResponsiveCard(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Información Importante',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '• Los documentos serán revisados por nuestro equipo\n'
+                      '• El proceso toma entre 24-48 horas\n'
+                      '• Te notificaremos por email el resultado\n'
+                      '• Todos los documentos son confidenciales',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -547,12 +580,13 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
     required bool required,
     required Color color,
   }) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -563,7 +597,7 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -572,58 +606,39 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
               children: [
                 Row(
                   children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: colors.tertiary,
-                        ),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: colorScheme.onSurface,
                       ),
                     ),
-                    if (required) const SizedBox(width: 4),
-                    if (required)
-                      Text(
-                        '*',
-                        style: TextStyle(
-                          color: colors.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    if (required) ...[
+                      const SizedBox(width: 4),
+                      Text('*', style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold)),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   description,
                   style: TextStyle(
-                    color: colors.tertiary.withValues(alpha: 0.75),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              // TODO: Implementar selección de archivo
-            },
-            style: ElevatedButton.styleFrom(
+          FilledButton(
+            onPressed: () {},
+            style: FilledButton.styleFrom(
               backgroundColor: color,
-              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text(
-              'Subir',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
+            child: const Text('Subir', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -631,38 +646,28 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
   }
 
   Widget _buildPlanStep() {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Plan Profesional',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Selecciona el período de facturación que prefieras',
-          style: TextStyle(
-            color: colors.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
-        const SizedBox(height: 20),
-        
-        // Plan profesional card
+        // Plan card
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [colors.primary, colors.primary.withValues(alpha: 0.8)],
+              colors: [colorScheme.primary, colorScheme.secondary],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -673,10 +678,10 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
                   children: [
                     Icon(Icons.workspace_premium, color: Colors.white, size: 28),
                     const SizedBox(width: 12),
-                    Text(
+                    const Text(
                       'Plan Profesional',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -685,14 +690,7 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
                 ),
                 const SizedBox(height: 16),
                 
-                Text(
-                  'Incluye:',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                const Text('Incluye:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 8),
                 
                 _buildFeatureItem('✓ Panel de abogado completo'),
@@ -708,191 +706,115 @@ class _LawyerVerificationPageState extends State<LawyerVerificationPage> {
         ),
         const SizedBox(height: 24),
         
-        // Selección de período de facturación
-        Text(
-          'Período de Facturación',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: colors.onSurface,
+        ResponsiveCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Período de Facturación',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              Row(
+                children: [
+                  Expanded(child: _buildBillingOption('Mensual', '\$299', 'por mes', null)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildBillingOption('Anual', '\$2,390', 'por año', '20% OFF')),
+                ],
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        
-        Row(
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildBillingOption(String period, String price, String unit, String? badge) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = _billingPeriod == period;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _billingPeriod = period),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primary.withValues(alpha: 0.1) : colorScheme.surface,
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
           children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _billingPeriod = 'Mensual';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _billingPeriod == 'Mensual'
-                        ? colors.secondary.withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: _billingPeriod == 'Mensual'
-                          ? colors.secondary
-                          : colors.outline.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Mensual',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: _billingPeriod == 'Mensual'
-                              ? colors.secondary
-                              : colors.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '\$299',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: _billingPeriod == 'Mensual'
-                              ? colors.secondary
-                              : colors.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'por mes',
-                        style: TextStyle(
-                          color: colors.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
+            if (badge != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(4),
                 ),
+                child: Text(badge, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            Text(
+              period,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _billingPeriod = 'Anual';
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _billingPeriod == 'Anual'
-                        ? colors.secondary.withValues(alpha: 0.1)
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: _billingPeriod == 'Anual'
-                          ? colors.secondary
-                          : colors.outline.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Anual',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _billingPeriod == 'Anual'
-                                  ? colors.secondary
-                                  : colors.onSurface,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              '20% OFF',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '\$2,390',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: _billingPeriod == 'Anual'
-                              ? colors.secondary
-                              : colors.onSurface,
-                        ),
-                      ),
-                      Text(
-                        'por año',
-                        style: TextStyle(
-                          color: colors.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                      if (_billingPeriod == 'Anual')
-                        Text(
-                          'Ahorras \$1,198',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+            const SizedBox(height: 8),
+            Text(
+              price,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
               ),
             ),
+            Text(unit, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+            if (isSelected && period == 'Anual')
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('Ahorras \$1,198', style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+              ),
           ],
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildFeatureItem(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-        ),
-      ),
+      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 13)),
     );
   }
 
   void _submitVerification() {
-    if (_currentStep == 0 && !_formKey.currentState!.validate()) {
-      return;
-    }
+    if (_currentStep == 0 && !_formKey.currentState!.validate()) return;
     
-    // TODO: Implementar envío de datos de verificación
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Verificación Enviada'),
-        content: const Text(
-          'Tu solicitud de verificación ha sido enviada exitosamente. '
-          'Recibirás un email de confirmación y el resultado de la verificación en 24-48 horas.\n\n'
-          '¡Gracias por unirte a LexIA como profesional!',
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Verificación Enviada', style: TextStyle(color: colorScheme.onSurface)),
+        content: Text(
+          'Tu solicitud ha sido enviada exitosamente. '
+          'Recibirás un email con el resultado en 24-48 horas.\n\n'
+          '¡Gracias por unirte a LexIA!',
+          style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         actions: [
           FilledButton(

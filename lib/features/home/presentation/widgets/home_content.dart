@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/home_notifier.dart';
+import '../../../login/presentation/providers/login_notifier.dart';
+import '../../../chat/presentation/providers/chat_privado_notifier.dart';
+import '../../domain/entities/consultation.dart';
+import '../../data/models/profesionista_model.dart';
+import '../../data/models/anunciante_model.dart';
 import 'question_chip.dart';
 import 'consultation_input.dart';
+import 'profesionista_card.dart';
+import 'anunciante_card.dart';
+import 'sugerencias_widget.dart';
 
 class HomeContent extends StatefulWidget {
   final VoidCallback onMenuPressed;
@@ -59,7 +69,7 @@ class _HomeContentState extends State<HomeContent> {
               IconButton(
                 icon: Icon(
                   Icons.menu,
-                  color: Theme.of(context).colorScheme.tertiary,
+                  color: Theme.of(context).colorScheme.onSurface,
                   size: isWeb ? 28 : 24,
                 ),
                 onPressed: widget.onMenuPressed,
@@ -208,7 +218,7 @@ class _HomeContentState extends State<HomeContent> {
                 'LexIA',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.tertiary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: isWeb ? 36 : null,
                     ),
               ),
@@ -218,7 +228,7 @@ class _HomeContentState extends State<HomeContent> {
               Text(
                 '¿Sobre qué necesitas ayuda?',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.tertiary,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: isWeb ? 28 : null,
                     ),
                 textAlign: TextAlign.center,
@@ -281,8 +291,8 @@ class _HomeContentState extends State<HomeContent> {
               _buildUserMessage(context, consultation.query),
               const SizedBox(height: 12),
               
-              // Respuesta de LexIA
-              _buildAIMessage(context, consultation.response),
+              // Respuesta de LexIA (con cards interactivas)
+              _buildAIMessageWithCards(context, consultation, notifier),
               const SizedBox(height: 24),
             ],
           );
@@ -332,34 +342,40 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  Widget _buildAIMessage(BuildContext context, String message) {
+  Widget _buildAIMessageWithCards(
+    BuildContext context, 
+    Consultation consultation, 
+    HomeNotifier notifier,
+  ) {
+    final theme = Theme.of(context);
+    
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.85,
+          maxWidth: MediaQuery.of(context).size.width * 0.90,
         ),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          // Distinto color para la IA para diferenciar visualmente
-          color: Theme.of(context).colorScheme.surface,
+          color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
             bottomLeft: Radius.circular(4),
             bottomRight: Radius.circular(16),
           ),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.4)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Row(
               children: [
                 Icon(
                   Icons.account_balance,
                   size: 18,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -367,14 +383,33 @@ class _HomeContentState extends State<HomeContent> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
+                if (consultation.cluster != null) ...[
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      consultation.cluster!,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
+            
+            // Texto de respuesta en Markdown
             MarkdownBody(
-              data: message,
+              data: consultation.response,
               styleSheet: MarkdownStyleSheet(
                 p: const TextStyle(fontSize: 14, height: 1.6),
                 h1: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -384,20 +419,397 @@ class _HomeContentState extends State<HomeContent> {
                 listBullet: const TextStyle(fontSize: 14),
               ),
             ),
+            
+            // Cards de Profesionistas (si hay)
+            if (consultation.tieneProfesionistas) ...[
+              const Divider(height: 32),
+              ProfesionistasListView(
+                profesionistas: consultation.profesionistas,
+                titulo: '👨‍⚖️ Profesionistas recomendados',
+                onVerPerfil: (p) {
+                  _showProfesionistaProfile(context, p);
+                },
+                onMatch: (p) {
+                  _handleMatchProfesionista(context, p);
+                },
+                onRechazar: (p) {
+                  // Simplemente no hacer nada o mostrar feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Entendido, no te mostraremos a ${p.nombre}'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ],
+            
+            // Cards de Anunciantes/Servicios (si hay)
+            if (consultation.tieneAnunciantes) ...[
+              const Divider(height: 32),
+              AnunciantesListView(
+                anunciantes: consultation.anunciantes,
+                titulo: '🚛 Servicios cercanos',
+                onVerDetalles: (a) {
+                  _showAnuncianteDetails(context, a);
+                },
+                onRechazar: (a) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Entendido, no te mostraremos ${a.nombreComercial}'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ],
+            
+            // Sugerencias de preguntas (si hay)
+            if (consultation.tieneSugerencias)
+              SugerenciasChips(
+                sugerencias: consultation.sugerencias,
+                onSugerenciaTap: (sugerencia) {
+                  notifier.sendMessage(sugerencia);
+                },
+              ),
+            
+            // Invitación al foro (si aplica)
+            if (consultation.ofrecerForo)
+              ForoInvitationBanner(
+                onIrAlForo: () {
+                  context.push('/forum');
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
+  void _showProfesionistaProfile(BuildContext context, ProfesionistaModel profesionista) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Contenido
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Avatar grande
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      backgroundImage: profesionista.fotoProfesional != null
+                          ? NetworkImage(profesionista.fotoProfesional!)
+                          : null,
+                      child: profesionista.fotoProfesional == null
+                          ? Text(
+                              profesionista.iniciales,
+                              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    // Nombre y verificación
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          profesionista.nombre,
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (profesionista.verificado)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: Icon(Icons.verified, color: Colors.green),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Rating
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(profesionista.ratingEstrellas),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${profesionista.rating.toStringAsFixed(1)}/5 (${profesionista.totalCalificaciones} valoraciones)',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Info
+                    _buildInfoRow(Icons.school, '${profesionista.experienciaAnios} años de experiencia'),
+                    _buildInfoRow(Icons.location_on, profesionista.ciudad),
+                    const SizedBox(height: 16),
+                    // Especialidades
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: profesionista.especialidades.map((esp) {
+                        return Chip(
+                          label: Text(esp),
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    // Descripción
+                    if (profesionista.descripcion.isNotEmpty) ...[
+                      Text(
+                        profesionista.descripcion,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                    // Botón de contactar
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _handleMatchProfesionista(context, profesionista);
+                        },
+                        icon: const Icon(Icons.handshake),
+                        label: const Text('Hacer Match para Contactar'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: Colors.grey),
+          const SizedBox(width: 8),
+          Text(text),
+        ],
+      ),
+    );
+  }
+
+  void _handleMatchProfesionista(BuildContext context, ProfesionistaModel profesionista) async {
+    // Obtener el userId del usuario actual
+    final loginNotifier = context.read<LoginNotifier>();
+    final chatNotifier = context.read<ChatPrivadoNotifier>();
+    final userId = loginNotifier.currentUserId;
+    
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo obtener tu información de usuario'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    // Mostrar loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Iniciando conversación...'),
+          ],
+        ),
+        duration: Duration(seconds: 3),
+      ),
+    );
+    
+    // Crear la conversación
+    final conversacion = await chatNotifier.iniciarConversacion(
+      abogadoId: profesionista.id,
+      mensajeInicial: '¡Hola! Me gustaría consultar sobre mi caso.',
+    );
+    
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    
+    if (conversacion != null) {
+      // Navegar directamente al chat
+      context.push('/chat/${conversacion.ciudadanoId}/${conversacion.abogadoId}');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(chatNotifier.errorMessage ?? 'Error al iniciar conversación'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showAnuncianteDetails(BuildContext context, AnuncianteModel anunciante) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Título
+              Row(
+                children: [
+                  Text(
+                    anunciante.iconoCategoria,
+                    style: const TextStyle(fontSize: 32),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          anunciante.nombreComercial,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          anunciante.categoriaServicio,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (anunciante.disponible24h)
+                    Chip(
+                      label: const Text('24 hrs'),
+                      avatar: const Icon(Icons.access_time, size: 16),
+                      backgroundColor: Colors.blue.shade100,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Descripción
+              if (anunciante.descripcion.isNotEmpty) ...[
+                Text(anunciante.descripcion),
+                const SizedBox(height: 16),
+              ],
+              // Dirección
+              if (anunciante.direccion.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.location_on),
+                  title: Text(anunciante.direccion),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              // Teléfono
+              if (anunciante.telefono.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.phone),
+                  title: Text(anunciante.telefono),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () async {
+                    final uri = Uri.parse('tel:${anunciante.telefono}');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    }
+                  },
+                ),
+              const SizedBox(height: 16),
+              // Botón llamar
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse('tel:${anunciante.telefono}');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    }
+                  },
+                  icon: const Icon(Icons.phone),
+                  label: const Text('Llamar ahora'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLoadingMessage(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         padding: const EdgeInsets.all(16),
         margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: isDark 
+              ? theme.colorScheme.surfaceContainerHighest 
+              : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -409,14 +821,17 @@ class _HomeContentState extends State<HomeContent> {
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.primary,
+                  theme.colorScheme.primary,
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Analizando tu consulta...',
-              style: TextStyle(fontSize: 14),
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ],
         ),

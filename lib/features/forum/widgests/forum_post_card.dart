@@ -38,6 +38,10 @@ class ForumPostCard extends StatelessWidget {
         return const Color(0xFF81C784);
       case 'Familiar':
         return const Color(0xFF64B5F6);
+      case 'Alcoholemia':
+        return const Color(0xFFBA68C8);
+      case 'Accidentes':
+        return const Color(0xFFFFB74D);
       default:
         return const Color(0xFFD19A86);
     }
@@ -45,17 +49,19 @@ class ForumPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final categoryColor = _getCategoryColor(category);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        boxShadow: isDark ? null : [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -74,11 +80,11 @@ class ForumPostCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: colors.tertiary,
+                    backgroundColor: colorScheme.primary,
                     child: Text(
                       userInitials,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colorScheme.onPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -90,15 +96,15 @@ class ForumPostCard extends StatelessWidget {
                       children: [
                         Text(
                           userName,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: colors.tertiary,
+                                color: colorScheme.onSurface,
                               ),
                         ),
                         Text(
                           date,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.tertiary.withOpacity(0.5),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                               ),
                         ),
                       ],
@@ -117,7 +123,7 @@ class ForumPostCard extends StatelessWidget {
                   _buildTag(category, categoryColor, isBold: true),
                   ...tags.map((tag) => _buildTag(
                         '#$tag',
-                        categoryColor.withOpacity(0.3),
+                        categoryColor.withValues(alpha: 0.3),
                       )),
                 ],
               ),
@@ -127,9 +133,9 @@ class ForumPostCard extends StatelessWidget {
               // Pregunta
               Text(
                 question,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: colors.tertiary,
+                      color: colorScheme.onSurface,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -140,8 +146,8 @@ class ForumPostCard extends StatelessWidget {
               // Extracto
               Text(
                 excerpt,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.tertiary.withOpacity(0.6),
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -159,12 +165,12 @@ class ForumPostCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Row(
                         children: [
-                          Icon(Icons.star_outline, size: 18, color: colors.tertiary.withOpacity(0.6)),
+                          Icon(Icons.star_outline, size: 18, color: colorScheme.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Text(
                             '$likes',
                             style: TextStyle(
-                              color: colors.tertiary.withOpacity(0.6),
+                              color: colorScheme.onSurfaceVariant,
                               fontSize: 14,
                             ),
                           ),
@@ -175,12 +181,12 @@ class ForumPostCard extends StatelessWidget {
                   const SizedBox(width: 16),
                   Row(
                     children: [
-                      Icon(Icons.people_outline, size: 18, color: colors.tertiary.withOpacity(0.6)),
+                      Icon(Icons.people_outline, size: 18, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         '$comments',
                         style: TextStyle(
-                          color: colors.tertiary.withOpacity(0.6),
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 14,
                         ),
                       ),

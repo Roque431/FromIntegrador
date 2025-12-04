@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/widgets/custom_snackbar.dart';
 import '../providers/home_notifier.dart';
 
 class ConsultationInput extends StatefulWidget {
@@ -43,40 +44,32 @@ class _ConsultationInputState extends State<ConsultationInput> {
 
     if (!mounted) return;
 
-    if (success) {
-      // Mostrar notificación de éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Consulta enviada correctamente'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Mostrar error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            homeNotifier.errorMessage ?? 'Error al enviar consulta',
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
+    if (!success) {
+      // Mostrar error solo si falla
+      LexiaAlert.error(
+        context,
+        title: 'Error al enviar consulta',
+        message: homeNotifier.errorMessage ?? 'Inténtalo de nuevo',
       );
     }
+    // No mostramos alerta de éxito porque la respuesta ya se muestra en el chat
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerHighest,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -88,11 +81,16 @@ class _ConsultationInputState extends State<ConsultationInput> {
             Expanded(
               child: TextField(
                 controller: _controller,
+                style: TextStyle(color: colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Pregúntale a LexIA',
-                  hintStyle: TextStyle(color: colors.tertiary.withValues(alpha: 0.4)),
+                  hintStyle: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
                   filled: true,
-                  fillColor: Colors.grey.shade50,
+                  fillColor: isDark
+                      ? colorScheme.surface.withValues(alpha: 0.5)
+                      : Colors.grey.shade50,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
@@ -110,12 +108,16 @@ class _ConsultationInputState extends State<ConsultationInput> {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _hasText ? colors.secondary : Colors.grey.shade300,
+                  color: _hasText 
+                      ? colorScheme.primary 
+                      : colorScheme.outline.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.arrow_upward,
-                  color: _hasText ? Colors.white : Colors.grey.shade500,
+                  color: _hasText 
+                      ? colorScheme.onPrimary 
+                      : colorScheme.onSurface.withValues(alpha: 0.5),
                   size: 20,
                 ),
               ),

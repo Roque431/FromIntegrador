@@ -6,7 +6,7 @@ import '../models/user_model.dart';
 
 abstract class LoginDataSource {
   Future<LoginResponse> login(LoginRequest request);
-  Future<LoginResponse> loginWithGoogle(String idToken);
+  Future<LoginResponse> loginWithGoogle(Map<String, String?> tokens);
   Future<UserModel> getCurrentUser();
   Future<UserModel> updateProfile({
     required String name,
@@ -44,11 +44,12 @@ class LoginDataSourceImpl implements LoginDataSource {
   }
 
   @override
-  Future<LoginResponse> loginWithGoogle(String idToken) async {
+  Future<LoginResponse> loginWithGoogle(Map<String, String?> tokens) async {
     try {
+      // El mapa puede contener 'idToken' (móvil) o 'accessToken' (web)
       final response = await apiClient.post(
         ApiEndpoints.googleLogin,
-        body: {'id_token': idToken},
+        body: tokens,  // Enviar el mapa tal cual (idToken o accessToken)
         requiresAuth: false,
       );
 
@@ -110,7 +111,10 @@ class LoginDataSourceImpl implements LoginDataSource {
         return await getCurrentUser();
       }
 
-      return UserModel.fromJson(response);
+      // El backend devuelve { message: ..., user: {...} }
+      // Extraer el objeto user si existe
+      final userData = response['user'] ?? response;
+      return UserModel.fromJson(userData);
     } catch (e) {
       print('❌ Error al actualizar el perfil: $e');
       

@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       drawer: const HomeDrawer(),
       body: SafeArea(
         child: HomeContent(

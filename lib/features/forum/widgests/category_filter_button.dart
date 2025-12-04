@@ -12,24 +12,35 @@ class CategoryFilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopupMenuButton<String>(
+      color: colorScheme.surfaceContainerHighest,
       icon: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.category_outlined, color: colors.secondary, size: 20),
+            Icon(Icons.category_outlined, color: colorScheme.secondary, size: 20),
             const SizedBox(width: 4),
             Text(
               'Todas Las Categorias',
               style: TextStyle(
-                color: colors.tertiary,
+                color: colorScheme.onSurface,
                 fontSize: 12,
               ),
             ),
@@ -39,25 +50,25 @@ class CategoryFilterButton extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       offset: const Offset(0, 50),
       itemBuilder: (context) => [
-        _buildMenuItem('Todas Las Categorias', null, colors),
+        _buildMenuItem('Todas Las Categorias', null, colorScheme),
         const PopupMenuDivider(),
-        _buildMenuItem('Laboral', 'Laboral', colors),
-        _buildMenuItem('Penal', 'Penal', colors),
-        _buildMenuItem('Civil', 'Civil', colors),
-        _buildMenuItem('Familiar', 'Familiar', colors),
+        _buildMenuItem('Laboral', 'Laboral', colorScheme),
+        _buildMenuItem('Penal', 'Penal', colorScheme),
+        _buildMenuItem('Civil', 'Civil', colorScheme),
+        _buildMenuItem('Familiar', 'Familiar', colorScheme),
       ],
       onSelected: onChanged,
     );
   }
 
-  PopupMenuItem<String> _buildMenuItem(String title, String? value, ColorScheme colors) {
+  PopupMenuItem<String> _buildMenuItem(String title, String? value, ColorScheme colorScheme) {
     final isSelected = selectedCategory == value;
     return PopupMenuItem<String>(
       value: value,
       child: Text(
         title,
         style: TextStyle(
-          color: isSelected ? colors.secondary : colors.tertiary,
+          color: isSelected ? colorScheme.primary : colorScheme.onSurface,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),

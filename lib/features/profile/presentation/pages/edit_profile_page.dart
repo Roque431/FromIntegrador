@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../login/presentation/providers/login_notifier.dart';
-import '../widgets/profile_header.dart';
+import '../../../../core/widgets/custom_snackbar.dart';
+import '../../../../core/widgets/responsive_widgets.dart';
+import '../../../../core/widgets/responsive_text_field.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -41,43 +43,51 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 600;
+    
+    final isWide = size.width > 600;
+    final isDesktop = size.width > 900;
+    
+    final avatarSize = isDesktop ? 100.0 : (isWide ? 90.0 : 80.0);
+    final cardPadding = isDesktop ? 28.0 : (isWide ? 24.0 : 20.0);
+    final maxWidth = isDesktop ? 550.0 : (isWide ? 480.0 : double.infinity);
     
     final loginNotifier = context.watch<LoginNotifier>();
     final currentUser = loginNotifier.currentUser;
     final userInitials = currentUser?.initials ?? 'U';
 
     return Scaffold(
-      backgroundColor: colors.primary,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: colors.primary,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: colors.tertiary,
-            size: isWeb ? 28 : 24,
-          ),
+          icon: Icon(Icons.close, color: colorScheme.onSurface),
           onPressed: () => context.pop(),
         ),
         title: Text(
           'Editar Perfil',
-          style: TextStyle(
-            color: colors.tertiary,
-            fontWeight: FontWeight.w600,
-            fontSize: isWeb ? 22 : null,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
           ),
         ),
+        centerTitle: true,
         actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: Text(
-              'Guardar',
-              style: TextStyle(
-                color: _isLoading ? colors.tertiary.withValues(alpha: 0.5) : colors.tertiary,
-                fontWeight: FontWeight.w600,
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: _isLoading ? null : _saveProfile,
+              child: Text(
+                'Guardar',
+                style: TextStyle(
+                  color: _isLoading ? colorScheme.onSurfaceVariant : colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
@@ -85,182 +95,185 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
       body: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWeb ? 700 : double.infinity),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: isWeb ? 32 : 24),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveSize.horizontalPadding(context),
+              vertical: 16,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
-                    SizedBox(height: isWeb ? 24 : 16),
-
-                    // Header con avatar
-                    ProfileHeader(
-                      name: _nameController.text.isEmpty ? 'Usuario' : _nameController.text,
-                      initials: userInitials,
-                    ),
-
-                    SizedBox(height: isWeb ? 32 : 24),
-
-                    // Campo de nombre
-                    _buildTextField(
-                      controller: _nameController,
-                      label: 'Nombre Completo',
-                      icon: Icons.person_outline,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'El nombre es requerido';
-                        }
-                        if (value.trim().length < 2) {
-                          return 'El nombre debe tener al menos 2 caracteres';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    SizedBox(height: isWeb ? 24 : 16),
-
-                    // Campo de email
-                    _buildTextField(
-                      controller: _emailController,
-                      label: 'Correo Electrónico',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'El correo es requerido';
-                        }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
-                          return 'Ingresa un correo válido';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    SizedBox(height: isWeb ? 24 : 16),
-
-                    // Campo de teléfono
-                    _buildTextField(
-                      controller: _phoneController,
-                      label: 'Número de Teléfono',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value != null && value.trim().isNotEmpty) {
-                          if (value.trim().length < 10) {
-                            return 'El teléfono debe tener al menos 10 dígitos';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-
-                    SizedBox(height: isWeb ? 40 : 32),
-
-                    // Botón de guardar
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _isLoading ? null : _saveProfile,
-                        style: FilledButton.styleFrom(
-                          minimumSize: Size(double.infinity, isWeb ? 56 : 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(isWeb ? 14 : 12),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(colors.onPrimary),
+                    // Card con avatar editable
+                    ResponsiveCard(
+                      padding: EdgeInsets.all(cardPadding),
+                      child: Column(
+                        children: [
+                          // Avatar con botón de cámara
+                          Stack(
+                            children: [
+                              Container(
+                                width: avatarSize,
+                                height: avatarSize,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colorScheme.primary,
+                                      colorScheme.secondary,
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colorScheme.primary.withValues(alpha: 0.3),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                                 ),
-                              )
-                            : Text(
-                                'Guardar Cambios',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: isWeb ? 16 : null,
+                                child: Center(
+                                  child: Text(
+                                    userInitials,
+                                    style: TextStyle(
+                                      fontSize: avatarSize * 0.4,
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onPrimary,
+                                    ),
+                                  ),
                                 ),
                               ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: colorScheme.surface,
+                                      width: 3,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: colorScheme.onPrimary,
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: isWide ? 12 : 8),
+                          Text(
+                            'Cambiar foto',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-
-                    SizedBox(height: isWeb ? 32 : 24),
+                    
+                    SizedBox(height: isWide ? 24 : 16),
+                    
+                    // Card con formulario
+                    ResponsiveCard(
+                      padding: EdgeInsets.all(cardPadding),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Información Personal',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          SizedBox(height: isWide ? 24 : 20),
+                          
+                          // Campo nombre
+                          ResponsiveTextField(
+                            controller: _nameController,
+                            hintText: 'Nombre completo',
+                            prefixIcon: Icon(
+                              Icons.person_outline,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'El nombre es requerido';
+                              }
+                              if (value.trim().length < 2) {
+                                return 'El nombre debe tener al menos 2 caracteres';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Campo email
+                          ResponsiveTextField(
+                            controller: _emailController,
+                            hintText: 'Correo electrónico',
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: Icon(
+                              Icons.email_outlined,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'El correo es requerido';
+                              }
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
+                                return 'Ingresa un correo válido';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Campo teléfono
+                          ResponsiveTextField(
+                            controller: _phoneController,
+                            hintText: 'Número de teléfono',
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: Icon(
+                              Icons.phone_outlined,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            validator: (value) {
+                              if (value != null && value.trim().isNotEmpty) {
+                                if (value.trim().length < 10) {
+                                  return 'El teléfono debe tener al menos 10 dígitos';
+                                }
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    SizedBox(height: isWide ? 32 : 24),
+                    
+                    // Botón guardar
+                    ResponsiveButton(
+                      text: 'Guardar Cambios',
+                      isLoading: _isLoading,
+                      onPressed: _saveProfile,
+                    ),
+                    
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 600;
-
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: TextStyle(
-        color: colors.tertiary,
-        fontSize: isWeb ? 16 : null,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: colors.tertiary.withValues(alpha: 0.7),
-          fontSize: isWeb ? 16 : null,
-        ),
-        prefixIcon: Icon(
-          icon,
-          color: colors.secondary,
-          size: isWeb ? 24 : 20,
-        ),
-        filled: true,
-        fillColor: colors.tertiary.withValues(alpha: 0.05),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isWeb ? 14 : 12),
-          borderSide: BorderSide(
-            color: colors.tertiary.withValues(alpha: 0.2),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isWeb ? 14 : 12),
-          borderSide: BorderSide(
-            color: colors.tertiary.withValues(alpha: 0.2),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isWeb ? 14 : 12),
-          borderSide: BorderSide(
-            color: colors.secondary,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isWeb ? 14 : 12),
-          borderSide: const BorderSide(
-            color: Colors.red,
-          ),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isWeb ? 14 : 12),
-          borderSide: const BorderSide(
-            color: Colors.red,
-            width: 2,
           ),
         ),
       ),
@@ -279,7 +292,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final loginNotifier = context.read<LoginNotifier>();
       
-      // Actualizar el perfil usando el LoginNotifier
       final success = await loginNotifier.updateProfile(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
@@ -288,30 +300,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (mounted) {
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Perfil actualizado correctamente'),
-              backgroundColor: Colors.green,
-            ),
+          LexiaAlert.success(
+            context,
+            title: '¡Perfil actualizado!',
+            message: 'Tus cambios han sido guardados correctamente',
           );
           
           context.pop();
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(loginNotifier.errorMessage ?? 'Error al actualizar el perfil'),
-              backgroundColor: Colors.red,
-            ),
+          LexiaAlert.error(
+            context,
+            title: 'Error',
+            message: loginNotifier.errorMessage ?? 'No se pudo actualizar el perfil',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al actualizar el perfil: $e'),
-            backgroundColor: Colors.red,
-          ),
+        LexiaAlert.error(
+          context,
+          title: 'Error inesperado',
+          message: 'Ocurrió un error al actualizar el perfil: $e',
         );
       }
     } finally {

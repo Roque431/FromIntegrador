@@ -16,17 +16,19 @@ class ForumFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? colors.tertiary : Colors.white,
+          color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? colors.tertiary : colors.outline,
+            color: isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
@@ -35,13 +37,13 @@ class ForumFilterChip extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : colors.tertiary,
+              color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : colors.tertiary,
+                color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 fontSize: 14,
               ),

@@ -23,7 +23,7 @@ class HistoryFilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? colors.secondary.withValues(alpha: 0.15) : Colors.white,
+          color: isSelected ? colors.secondary.withValues(alpha: 0.15) : colors.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? colors.secondary : Colors.transparent,
@@ -36,13 +36,13 @@ class HistoryFilterChip extends StatelessWidget {
             Icon(
               _getIconForLabel(label),
               size: 18,
-              color: isSelected ? colors.secondary : colors.tertiary.withValues(alpha: 0.6),
+              color: isSelected ? colors.secondary : colors.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? colors.secondary : colors.tertiary,
+                color: isSelected ? colors.secondary : colors.onSurface,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 fontSize: 14,
               ),
@@ -51,7 +51,7 @@ class HistoryFilterChip extends StatelessWidget {
             Text(
               count,
               style: TextStyle(
-                color: isSelected ? colors.secondary : colors.tertiary.withValues(alpha: 0.6),
+                color: isSelected ? colors.secondary : colors.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),

@@ -4,10 +4,11 @@ abstract class LoginRepository {
   Future<({User user, String token})> login({
     required String email,
     required String password,
+    
   });
 
-  Future<({User user, String token})> loginWithGoogle(String idToken);
-
+  Future<({User user, String token})> loginWithGoogle(Map<String, String?> tokens);
+  Future<String?> getStoredUserId();
   Future<User> getCurrentUser();
   Future<User> updateProfile({
     required String name,

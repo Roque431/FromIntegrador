@@ -1,91 +1,147 @@
 class ApiEndpoints {
   // ========================================
-  // Auth endpoints - Con prefijo /usuarios/ para nginx
+  // Auth endpoints - Microservicio Auth
   // ========================================
-  static const String register = '/usuarios/users/register';  
-  static const String login = '/usuarios/users/login';
-  static const String googleLogin = '/usuarios/auth/google';
-  static const String logout = '/usuarios/users/logout';
-  static const String me = '/usuarios/users/me';
-  static const String updateProfile = '/usuarios/users/profile';
-  static const String users = '/usuarios/users';
+  static const String register = '/api/auth/register';
+  static const String login = '/api/auth/login';
+  static const String googleLogin = '/api/auth/google/verify';  // Para móvil
+  static const String googleLoginWeb = '/api/auth/google';  // Para web redirect
+  static const String logout = '/api/auth/logout';
+  static const String me = '/api/auth/me';
+  static const String updateProfile = '/api/auth/me';  // Assuming PATCH/PUT
+  static const String refreshToken = '/api/auth/refresh';
+
+  // Legacy - deprecated
+  static const String users = '/api/auth';
   static String userById(String id) => '$users/$id';
 
   // ========================================
   // Email verification endpoints
   // ========================================
-  static const String sendVerificationCode = '/usuarios/users/send-verification-code';
-  static const String verifyEmail = '/usuarios/users/verify-email';
+  static const String sendVerificationCode = '/api/auth/resend-verification';
+  static const String verifyEmail = '/api/auth/verify-email';
+  static const String forgotPassword = '/api/auth/forgot-password';
+  static const String resetPassword = '/api/auth/reset-password';
 
   // ========================================
-  // Consultation endpoints (Microservicio Consultas NLP)
+  // Chat/Consultation endpoints (Microservicio Chat con NLP+RAG)
   // ========================================
-  static const String consultas = '/consultas';
-  static const String chatMessage = '$consultas/queries/chat/message';
-  static String chatHistory(String usuarioId) => '$consultas/queries/historial/$usuarioId';
-  static const String chatSessions = '$consultas/queries/sessions';
+  static const String chat = '/api/chat';
+  static const String chatMessage = '$chat/message';
+  static const String chatSessionStart = '$chat/session/start';
+  static const String chatSessions = '$chat/sessions';
   static String chatSessionById(String id) => '$chatSessions/$id';
-  
+  static String chatHistory(String usuarioId) => '$chat/history/$usuarioId';
+
   // Legacy compatibility
+  static const String consultas = chat;
   static const String consultations = chatSessions;
   static String consultationById(String id) => '$consultations/$id';
   static String createConsultation = chatMessage;
-  static String userConsultations(String userId) => '$chatHistory?usuario_id=$userId';
+  static String userConsultations(String userId) => chatHistory(userId);
 
   // ========================================
-  // Legal Content endpoints (Microservicio Contenido Legal)
+  // NLP Service endpoints (Procesamiento de lenguaje natural)
   // ========================================
-  static const String contenido = '/contenido';
-  static const String contentSearch = '$contenido/content/search';
-  static const String contentIngest = '$contenido/content/ingest';
-  static const String contentList = '$contenido/content';
-  static String contentById(String id) => '$contenido/content/$id';
+  static const String nlp = '/api/nlp';
+  static const String nlpAnalyze = '$nlp/analyze';
+  static const String nlpClassify = '$nlp/classify';
+
+  // Legacy compatibility
+  static const String contenido = nlp;
+  static const String contentSearch = '$nlp/search';
+  static const String contentIngest = '$nlp/ingest';
+  static const String contentList = nlp;
+  static String contentById(String id) => '$nlp/$id';
 
   // ========================================
-  // Forum endpoints (Microservicio Foro)
+  // RAG Service endpoints (Retrieval-Augmented Generation)
   // ========================================
-  static const String foro = '/foro';
-  static const String topics = '$foro/community/topics';
-  static String topicById(String id) => '$topics/$id';
-  static const String messages = '$foro/community/messages';
-  static String topicMessages(String topicId) => '$topics/$topicId/messages';
-  static String createMessage(String topicId) => '$messages';
+  static const String rag = '/api/rag';
+  static const String ragQuery = '$rag/query';
+  static const String ragIngest = '$rag/ingest';
+  static const String ragDocuments = '$rag/documents';
+
+  // ========================================
+  // Foro de Comunidad endpoints (Chat Service)
+  // ========================================
+  static const String foro = '/api/chat/foro';
+  static const String foroCategorias = '$foro/categorias';
+  static const String foroPublicaciones = '$foro/publicaciones';
+  static String foroPublicacion(String id) => '$foro/publicacion/$id';
+  static String foroPublicacionComentario(String id) => '$foro/publicacion/$id/comentario';
+  static String foroPublicacionLike(String id) => '$foro/publicacion/$id/like';
+  static const String foroBuscar = '$foro/buscar';
+  static String foroMisPublicaciones(String usuarioId) => '$foro/mis-publicaciones/$usuarioId';
+  
+  // ========================================
+  // Historial de Conversaciones endpoints (Chat Service)
+  // ========================================
+  static String userConversations(String usuarioId) => '/api/chat/user/$usuarioId/conversations';
+  static String conversationDetail(String sessionId) => '/api/chat/conversation/$sessionId';
   
   // Legacy compatibility
   static const String forum = foro;
-  static const String posts = topics;
-  static String postById(String id) => '$posts/$id';
-  static String postComments(String postId) => topicMessages(postId);
-  static String createComment(String postId) => createMessage(postId);
+  static const String topics = foroPublicaciones;
+  static String topicById(String id) => foroPublicacion(id);
+  static const String messages = foroPublicaciones;
+  static String topicMessages(String topicId) => foroPublicacionComentario(topicId);
+  static String createMessage(String topicId) => foroPublicacionComentario(topicId);
+  static const String posts = foroPublicaciones;
+  static String postById(String id) => foroPublicacion(id);
+  static String postComments(String postId) => foroPublicacionComentario(postId);
+  static String createComment(String postId) => foroPublicacionComentario(postId);
 
   // ========================================
-  // Legal map endpoints (Microservicio Orientación Local)
+  // Geo-Assistance endpoints (Microservicio de Geolocalización)
   // ========================================
-  static const String ubicacion = '/ubicacion';
-  static const String advisory = '$ubicacion/locations/asesoria';
-  static const String nearbyLocations = '$ubicacion/locations/nearby';
-  static const String locations = '$ubicacion/locations';
-  static String locationById(String id) => '$locations/$id';
-  static String locationsByCity(String city) => '$locations/ciudad/$city';
-  static String locationsByType(String type) => '$locations/tipo/$type';
-  
+  static const String geo = '/api/geo';
+  static const String geoAdvisory = '$geo/advisory';
+  static const String geoNearby = '$geo/nearby';
+  static const String geoLocations = '$geo/locations';
+  static String geoLocationById(String id) => '$geoLocations/$id';
+  static String geoLocationsByCity(String city) => '$geoLocations?city=$city';
+  static String geoLocationsByType(String type) => '$geoLocations?type=$type';
+
   // Legacy compatibility
-  static const String legalMap = advisory;
-  static const String asesoria = advisory;
-  static const String nearby = nearbyLocations;
-  static String legalMapByState(String state) => '$advisory?estado=$state';
+  static const String ubicacion = geo;
+  static const String advisory = geoAdvisory;
+  static const String nearbyLocations = geoNearby;
+  static const String locations = geoLocations;
+  static String locationById(String id) => geoLocationById(id);
+  static String locationsByCity(String city) => geoLocationsByCity(city);
+  static String locationsByType(String type) => geoLocationsByType(type);
+  static const String legalMap = geoAdvisory;
+  static const String asesoria = geoAdvisory;
+  static const String nearby = geoNearby;
+  static String legalMapByState(String state) => '$geoAdvisory?estado=$state';
 
   // ========================================
-  // Subscription endpoints (Microservicio Transacciones)
+  // Transactions/Subscription endpoints (Microservicio Transacciones)
   // ========================================
-  static const String transactions = '/transactions';
+  static const String transactions = '/api/transactions';
   static const String createCheckout = '$transactions/create-checkout';
+  static const String stripeWebhook = '$transactions/webhook/stripe';
   static String userTransactions(String userId) => '$transactions/user/$userId';
   static String transactionById(String id) => '$transactions/$id';
-  
+
   // Legacy compatibility
   static const String transacciones = transactions;
   static const String checkout = createCheckout;
   static const String subscriptions = createCheckout;
   static const String createSubscription = createCheckout;
+
+  // ========================================
+  // Analytics endpoints (OLAP Cube Service)
+  // ========================================
+  static const String olap = '/api/olap';
+  static const String olapQuery = '$olap/query';
+  static const String olapReport = '$olap/report';
+
+  // ========================================
+  // Clustering/ML endpoints (Clustering Service)
+  // ========================================
+  static const String clustering = '/api/clustering';
+  static const String clusteringAnalyze = '$clustering/analyze';
+  static const String clusteringGroups = '$clustering/groups';
 }

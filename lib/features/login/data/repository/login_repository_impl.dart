@@ -41,10 +41,13 @@ class LoginRepositoryImpl implements LoginRepository {
 
     return (user: response.user, token: response.token);
   }
-
   @override
-  Future<({User user, String token})> loginWithGoogle(String idToken) async {
-    final response = await dataSource.loginWithGoogle(idToken);
+  Future<String?> getStoredUserId() async {
+    return await _secureTokenRepository.getUserId(); 
+  }
+  @override
+  Future<({User user, String token})> loginWithGoogle(Map<String, String?> tokens) async {
+    final response = await dataSource.loginWithGoogle(tokens);
 
     // Guardar token en almacenamiento seguro (MSTG-STORAGE-1 compliance)
     await _secureTokenRepository.saveAuthToken(response.token);

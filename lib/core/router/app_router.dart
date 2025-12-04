@@ -13,6 +13,8 @@ import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_
 import 'package:flutter_application_1/features/lawyer/presentation/pages/lawyer_forum_page.dart';
 import 'package:flutter_application_1/features/profile/presentation/pages/lawyer_verification_page.dart';
 import 'package:flutter_application_1/features/business/presentation/pages/business_registration_page.dart';
+import 'package:flutter_application_1/features/chat/presentation/pages/conversaciones_page.dart';
+import 'package:flutter_application_1/features/chat/presentation/pages/chat_privado_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../application/app_state.dart';
@@ -128,6 +130,23 @@ class AppRouter {
         path: '/legal-map',
         builder: (context, state) => const LegalMapPage(),
       ),
+      
+      // Rutas de chat privado
+      GoRoute(
+        name: AppRoutes.conversations,
+        path: '/conversations',
+        builder: (context, state) => const ConversacionesPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.chatPrivado,
+        path: '/chat/:ciudadanoId/:abogadoId',
+        builder: (context, state) {
+          final ciudadanoId = state.pathParameters['ciudadanoId'] ?? '';
+          final abogadoId = state.pathParameters['abogadoId'] ?? '';
+          return ChatPrivadoPage(ciudadanoId: ciudadanoId, abogadoId: abogadoId);
+        },
+      ),
+      
       // Rutas del abogado
       GoRoute(
         name: AppRoutes.lawyerHome,

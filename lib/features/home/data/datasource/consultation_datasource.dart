@@ -2,6 +2,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/storage/secure_token_repository.dart';
+import '../../../login/domain/repository/login_repository.dart';
 import '../models/chat_message_request.dart';
 import '../models/chat_message_response.dart';
 
@@ -13,46 +15,98 @@ abstract class ConsultationDataSource {
 class ConsultationDataSourceImpl implements ConsultationDataSource {
   final ApiClient apiClient;
   final SharedPreferences sharedPreferences;
+  final SecureTokenRepository secureTokenRepository;
+  final LoginRepository loginRepository;
 
   ConsultationDataSourceImpl({
     required this.apiClient,
     required this.sharedPreferences,
+    required this.secureTokenRepository,
+    required this.loginRepository,
   });
 
   @override
   Future<ChatMessageResponse> sendMessage(ChatMessageRequest request) async {
     try {
-      // Obtener usuario_id de SharedPreferences
-      final userId = sharedPreferences.getString('user_id');
-      if (userId == null) {
-        throw ApiException('Usuario no autenticado');
+      // Asegurar token de autenticación en ApiClient
+      if (!apiClient.hasToken) {
+        final storedToken = await secureTokenRepository.getAuthToken();
+        if (storedToken != null && storedToken.isNotEmpty) {
+          apiClient.setAuthToken(storedToken);
+          print('🔐 ApiClient token restaurado desde almacenamiento seguro');
+        }
+      }
+      if (!apiClient.hasToken) {
+        throw UnauthorizedException('Usuario no autenticado: token ausente');
       }
 
-      // Usar el session_id que viene en el request, o generar uno nuevo solo la primera vez
-      final sessionId = request.sessionId ?? const Uuid().v4();
+      // Obtener usuario_id preferentemente desde almacenamiento seguro
+      String? userId = await secureTokenRepository.getUserId();
+      userId ??= sharedPreferences.getString('user_id');
+      if (userId == null || userId.isEmpty) {
+        throw UnauthorizedException('Usuario no autenticado: user_id ausente');
+      }
 
-      print('🔵 Datasource - sessionId del request: ${request.sessionId}');
-      print('🔵 Datasource - sessionId final a enviar: $sessionId');
+      // Preparar nombre del usuario (se usa en start y en message para personalización)
+      String nombreUsuario = 'Usuario';
+      try {
+        final user = await loginRepository.getCurrentUser();
+        final parts = [user.name.trim(), (user.lastName ?? '').trim()]
+            .where((p) => p.isNotEmpty)
+            .toList();
+        final full = parts.join(' ');
+        if (full.isNotEmpty) nombreUsuario = full;
+      } catch (_) {}
 
+      // Si el request trae algo en sessionId que parece ser un JWT, ignorarlo y crear/recuperar sesión real
+      String? sessionId = request.sessionId;
+      // Tratar "" como no-proporcionado
+      if (sessionId != null && sessionId.trim().isEmpty) {
+        sessionId = null;
+      }
+      if (sessionId != null && sessionId.split('.').length == 3) {
+        // Parece un JWT, no debe usarse como sessionId
+        print('⚠️ sessionId recibido parece un JWT, se ignorará para crear/usar sesión real');
+        sessionId = null;
+      }
+
+      // Si no tenemos sessionId válido, iniciar sesión de chat
+      if (sessionId == null) {
+        print('🔄 Iniciando nueva sesión de chat para usuario $userId');
+        final startResponse = await apiClient.post(
+          ApiEndpoints.chatSessionStart,
+          body: {
+            'usuarioId': userId,
+            'nombre': nombreUsuario,
+          },
+          requiresAuth: true,
+        );
+        sessionId = startResponse['sessionId'] ?? const Uuid().v4();
+        print('🆕 Sesión creada: $sessionId');
+      }
+
+      print('🔵 Datasource - usando sessionId: $sessionId');
+
+      // Construir body conforme al backend de Chat Service
       final body = <String, dynamic>{
-        'texto': request.message,
-      };
-
-      final queryParams = <String, String>{
-        'usuario_id': userId,
-        'session_id': sessionId,
+        'sessionId': sessionId,
+        'mensaje': request.message,
+        'usuarioId': userId,
+        'nombre': nombreUsuario,
       };
 
       final response = await apiClient.post(
         ApiEndpoints.chatMessage,
         body: body,
-        queryParameters: queryParams,
         requiresAuth: true,
       );
 
-      print('🟢 Datasource - sessionId en respuesta: ${response['session_id']}');
+      print('🟢 Datasource - sessionId en respuesta: ${response['sessionId'] ?? response['session_id']}');
 
       return ChatMessageResponse.fromJson(response);
+    } on ApiException catch (e) {
+      // Re-lanzar excepciones conocidas
+      throw e;
     } catch (e) {
       throw ApiException('Error al enviar mensaje: $e');
     }

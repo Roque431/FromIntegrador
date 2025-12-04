@@ -31,6 +31,9 @@ class LoginNotifier extends ChangeNotifier {
   bool get isAuthenticated => _state == LoginState.authenticated;
   bool get isLoading => _state == LoginState.loading;
   
+  // Getter para el ID del usuario actual (para foro e historial)
+  String? get currentUserId => _currentUser?.id;
+  
   // Para compatibilidad con AppRouter
   AuthStatus get authStatus {
     switch (_state) {
@@ -131,20 +134,21 @@ class LoginNotifier extends ChangeNotifier {
 
       print('✅ Cuenta de Google obtenida: ${account.email}');
 
-      // 2. Obtener el ID token de Google
-      final idToken = await googleSignInService.getIdToken();
-      if (idToken == null) {
-        print('❌ No se pudo obtener el ID token de Google');
+      // 2. Obtener tokens de Google (idToken para móvil, accessToken para web)
+      final tokens = await googleSignInService.getAuthTokens();
+      if (tokens.isEmpty) {
+        print('❌ No se pudo obtener tokens de autenticación de Google');
         _state = LoginState.error;
         _errorMessage = 'No se pudo obtener el token de autenticación de Google';
         notifyListeners();
         return false;
       }
 
-      print('✅ ID Token obtenido, enviando al backend...');
+      print('✅ Tokens obtenidos, enviando al backend...');
+      print('   Tokens disponibles: ${tokens.keys.join(", ")}');
 
-      // 3. Enviar el token al backend para autenticar con OAuth
-      final result = await loginRepository.loginWithGoogle(idToken);
+      // 3. Enviar los tokens al backend para autenticar con OAuth
+      final result = await loginRepository.loginWithGoogle(tokens);
 
       _currentUser = result.user;
       await loginRepository.saveToken(result.token);

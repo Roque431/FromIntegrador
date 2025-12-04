@@ -3,8 +3,10 @@ import 'package:flutter_application_1/features/forum/widgests/category_filter_bu
 import 'package:flutter_application_1/features/forum/widgests/forum_filter_chip.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_post_card.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/router/routes.dart';
-
+import '../../../../core/widgets/responsive_widgets.dart';
+import '../presentation/providers/foro_notifier.dart';
 
 class ForumPage extends StatefulWidget {
   const ForumPage({super.key});
@@ -15,73 +17,15 @@ class ForumPage extends StatefulWidget {
 
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedFilter = 'Recientes';
-  String? _selectedCategory;
 
-  // Datos de ejemplo - TODO: Reemplazar con datos reales de la API
-  final List<Map<String, dynamic>> _posts = [
-    {
-      'id': 'post_1',
-      'userName': 'Luis Torrez',
-      'userInitials': 'LT',
-      'date': '29/05/2025',
-      'category': 'Penal',
-      'tags': ['Defensa', 'Inquilino'],
-      'question': '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-      'excerpt': 'De acuerdo con el Código Civil, el arrendador tiene la obligación de mantener...',
-      'likes': 8,
-      'comments': 4,
-    },
-    {
-      'id': 'post_2',
-      'userName': 'Ramos Molina',
-      'userInitials': 'RA',
-      'date': '29/05/2025',
-      'category': 'Laboral',
-      'tags': ['Despido', 'Liquidacion'],
-      'question': '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-      'excerpt': 'De acuerdo con el Código Civil, el arrendador tiene la obligación de mantener...',
-      'likes': 8,
-      'comments': 4,
-    },
-    {
-      'id': 'post_3',
-      'userName': 'Ramos Molina',
-      'userInitials': 'RA',
-      'date': '28/05/2025',
-      'category': 'Laboral',
-      'tags': ['Despido', 'Liquidacion'],
-      'question': '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-      'excerpt': 'De acuerdo con el Código Civil, el arrendador tiene la obligación de mantener...',
-      'likes': 8,
-      'comments': 4,
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredPosts {
-    var filtered = _posts;
-
-    // Filtrar por categoría
-    if (_selectedCategory != null) {
-      filtered = filtered.where((post) => post['category'] == _selectedCategory).toList();
-    }
-
-    // Filtrar por búsqueda
-    if (_searchController.text.isNotEmpty) {
-      final query = _searchController.text.toLowerCase();
-      filtered = filtered
-          .where((post) => post['question'].toLowerCase().contains(query))
-          .toList();
-    }
-
-    // Ordenar según filtro seleccionado
-    if (_selectedFilter == 'Populares') {
-      filtered.sort((a, b) => (b['likes'] as int).compareTo(a['likes'] as int));
-    } else if (_selectedFilter == 'Mas Utiles') {
-      filtered.sort((a, b) => (b['comments'] as int).compareTo(a['comments'] as int));
-    }
-
-    return filtered;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = context.read<ForoNotifier>();
+      notifier.loadCategorias();
+      notifier.loadPublicaciones();
+    });
   }
 
   @override
@@ -90,17 +34,159 @@ class _ForumPageState extends State<ForumPage> {
     super.dispose();
   }
 
+  void _onSearch(String query) {
+    final notifier = context.read<ForoNotifier>();
+    if (query.isEmpty) {
+      notifier.loadPublicaciones();
+    } else {
+      notifier.buscarPublicaciones(query);
+    }
+  }
+
+  void _showNuevaPublicacionDialog() {
+    final notifier = context.read<ForoNotifier>();
+    final tituloController = TextEditingController();
+    final contenidoController = TextEditingController();
+    String? categoriaSeleccionada;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Nueva Publicación', style: TextStyle(color: colorScheme.onSurface)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: categoriaSeleccionada,
+                  dropdownColor: colorScheme.surfaceContainerHighest,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Categoría',
+                    labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                    ),
+                  ),
+                  items: notifier.categorias.map((cat) {
+                    return DropdownMenuItem(
+                      value: cat.id,
+                      child: Text(cat.nombre, style: TextStyle(color: colorScheme.onSurface)),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setDialogState(() => categoriaSeleccionada = value),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: tituloController,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Título',
+                    labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    hintText: '¿Cuál es tu pregunta?',
+                    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                    ),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: contenidoController,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Descripción',
+                    labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    hintText: 'Describe tu situación con más detalle...',
+                    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                    ),
+                  ),
+                  maxLines: 5,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancelar', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (tituloController.text.trim().isEmpty ||
+                    contenidoController.text.trim().isEmpty ||
+                    categoriaSeleccionada == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Completa todos los campos')),
+                  );
+                  return;
+                }
+
+                Navigator.pop(ctx);
+
+                final result = await notifier.crearPublicacion(
+                  titulo: tituloController.text.trim(),
+                  contenido: contenidoController.text.trim(),
+                  categoriaId: categoriaSeleccionada!,
+                );
+
+                if (result != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Publicación creada')),
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(notifier.errorMessage ?? 'Error al crear')),
+                  );
+                }
+              },
+              child: const Text('Publicar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final notifier = context.watch<ForoNotifier>();
 
     return Scaffold(
-      backgroundColor: colors.primary,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: colors.primary,
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colors.secondary),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -109,63 +195,51 @@ class _ForumPageState extends State<ForumPage> {
             }
           },
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Foro Comunitario',
-              style: TextStyle(
-                color: colors.tertiary,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-              ),
-            ),
-            Text(
-              'Comparte y descubre soluciones legales de la comunidad LexIA',
-              style: TextStyle(
-                color: colors.tertiary.withOpacity(0.6),
-                fontSize: 11,
-              ),
-            ),
-          ],
+        title: Text(
+          'Foro Comunitario',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // Buscador y filtro de categorías
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.horizontalPadding(context)),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _searchController,
+                      style: TextStyle(color: colorScheme.onSurface),
                       decoration: InputDecoration(
                         hintText: 'Buscar consulta',
-                        hintStyle: TextStyle(color: colors.tertiary.withOpacity(0.4)),
-                        prefixIcon: Icon(Icons.search, color: colors.tertiary.withOpacity(0.5)),
+                        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                        prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: colorScheme.surfaceContainerHighest,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                       ),
-                      onChanged: (value) => setState(() {}),
+                      onSubmitted: _onSearch,
+                      onChanged: (value) {
+                        if (value.isEmpty) _onSearch('');
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   CategoryFilterButton(
-                    selectedCategory: _selectedCategory,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value;
-                      });
-                    },
+                    selectedCategory: notifier.categoriaSeleccionada,
+                    onChanged: (value) => notifier.setCategoriaSeleccionada(value),
                   ),
                 ],
               ),
@@ -178,27 +252,27 @@ class _ForumPageState extends State<ForumPage> {
               height: 40,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.horizontalPadding(context)),
                 children: [
                   ForumFilterChip(
                     icon: Icons.access_time,
                     label: 'Recientes',
-                    isSelected: _selectedFilter == 'Recientes',
-                    onTap: () => setState(() => _selectedFilter = 'Recientes'),
+                    isSelected: notifier.filtroActual == 'Recientes',
+                    onTap: () => notifier.setFiltro('Recientes'),
                   ),
                   const SizedBox(width: 8),
                   ForumFilterChip(
                     icon: Icons.star_outline,
                     label: 'Populares',
-                    isSelected: _selectedFilter == 'Populares',
-                    onTap: () => setState(() => _selectedFilter = 'Populares'),
+                    isSelected: notifier.filtroActual == 'Populares',
+                    onTap: () => notifier.setFiltro('Populares'),
                   ),
                   const SizedBox(width: 8),
                   ForumFilterChip(
                     icon: Icons.people_outline,
-                    label: 'Mas Utiles',
-                    isSelected: _selectedFilter == 'Mas Utiles',
-                    onTap: () => setState(() => _selectedFilter = 'Mas Utiles'),
+                    label: 'Más Útiles',
+                    isSelected: notifier.filtroActual == 'Mas Utiles',
+                    onTap: () => notifier.setFiltro('Mas Utiles'),
                   ),
                 ],
               ),
@@ -207,73 +281,116 @@ class _ForumPageState extends State<ForumPage> {
             const SizedBox(height: 16),
 
             // Lista de posts
-            Expanded(
-              child: _filteredPosts.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.forum_outlined,
-                            size: 64,
-                            color: colors.tertiary.withOpacity(0.3),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No hay publicaciones',
-                            style: TextStyle(
-                              color: colors.tertiary.withOpacity(0.6),
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _filteredPosts.length,
-                      itemBuilder: (context, index) {
-                        final post = _filteredPosts[index];
-                        return ForumPostCard(
-                          userName: post['userName'],
-                          userInitials: post['userInitials'],
-                          date: post['date'],
-                          category: post['category'],
-                          tags: List<String>.from(post['tags']),
-                          question: post['question'],
-                          excerpt: post['excerpt'],
-                          likes: post['likes'],
-                          comments: post['comments'],
-                          onTap: () {
-                            context.pushNamed(
-                              AppRoutes.forumDetail,
-                              pathParameters: {'id': post['id']},
-                            );
-                          },
-                          onLike: () {
-                            // TODO: Implementar like
-                            setState(() {
-                              post['likes']++;
-                            });
-                          },
-                        );
-                      },
-                    ),
-            ),
+            Expanded(child: _buildContent(notifier, colorScheme)),
           ],
         ),
       ),
-      // Botón flotante para crear nueva publicación
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navegar a crear nueva publicación
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Crear nueva publicación - TODO')),
+        onPressed: _showNuevaPublicacionDialog,
+        backgroundColor: colorScheme.primary,
+        icon: Icon(Icons.add, color: colorScheme.onPrimary),
+        label: Text('Nueva', style: TextStyle(color: colorScheme.onPrimary)),
+      ),
+    );
+  }
+
+  Widget _buildContent(ForoNotifier notifier, ColorScheme colorScheme) {
+    if (notifier.isLoading) {
+      return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+    }
+
+    if (notifier.hasError) {
+      return Padding(
+        padding: EdgeInsets.all(ResponsiveSize.horizontalPadding(context)),
+        child: ResponsiveCard(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                notifier.errorMessage ?? 'Error al cargar',
+                style: TextStyle(color: colorScheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ResponsiveButton(
+                text: 'Reintentar',
+                onPressed: () => notifier.loadPublicaciones(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (notifier.publicaciones.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.all(ResponsiveSize.horizontalPadding(context)),
+        child: ResponsiveCard(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.forum_outlined, size: 48, color: colorScheme.primary),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No hay publicaciones',
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '¡Sé el primero en publicar!',
+                style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => notifier.loadPublicaciones(),
+      child: ListView.builder(
+        padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.horizontalPadding(context)),
+        itemCount: notifier.publicaciones.length,
+        itemBuilder: (context, index) {
+          final post = notifier.publicaciones[index];
+          return ForumPostCard(
+            userName: post.autorNombre,
+            userInitials: post.autorInitials,
+            date: post.fechaFormateada,
+            category: post.categoriaNombre,
+            tags: const [],
+            question: post.titulo,
+            excerpt: post.contenido.length > 150
+                ? '${post.contenido.substring(0, 150)}...'
+                : post.contenido,
+            likes: post.likes,
+            comments: post.comentarios,
+            onTap: () {
+              context.pushNamed(
+                AppRoutes.forumDetail,
+                pathParameters: {'id': post.id},
+              );
+            },
+            onLike: () => notifier.toggleLike(post.id),
           );
         },
-        backgroundColor: colors.secondary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Nueva', style: TextStyle(color: Colors.white)),
       ),
     );
   }

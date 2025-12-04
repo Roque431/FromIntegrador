@@ -10,7 +10,9 @@ class QuestionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
     final isWeb = size.width > 600;
 
@@ -25,17 +27,17 @@ class QuestionChip extends StatelessWidget {
           vertical: isWeb ? 14 : 10,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(isWeb ? 24 : 20),
           border: Border.all(
-            color: colors.outline,
+            color: colorScheme.outline.withValues(alpha: isDark ? 0.5 : 1.0),
             width: isWeb ? 1.5 : 1,
           ),
         ),
         child: Text(
           question,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.tertiary,
+          style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface,
                 fontSize: isWeb ? 15 : null,
               ),
         ),

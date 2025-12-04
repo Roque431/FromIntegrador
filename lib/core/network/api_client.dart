@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -9,7 +10,15 @@ class ApiClient {
 
   ApiClient({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client() {
-    baseUrl = dotenv.env['API_URL'] ?? 'http://localhost:3000';
+    // Detectar automáticamente la URL según la plataforma
+    if (kIsWeb) {
+      // En web, usar localhost
+      baseUrl = dotenv.env['API_URL_WEB'] ?? 'http://localhost:80';
+    } else {
+      // En móvil (Android/iOS), usar la IP de la laptop
+      baseUrl = dotenv.env['API_URL_MOBILE'] ?? dotenv.env['API_URL'] ?? 'http://172.20.10.2:80';
+    }
+    print('🌐 ApiClient inicializado con baseUrl: $baseUrl (isWeb: $kIsWeb)');
   }
 
   // Setter para el token de autenticación

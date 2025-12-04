@@ -63,11 +63,11 @@ class GoogleSignInService {
     }
   }
 
-  /// Obtiene el token de ID (Firebase en móvil, Google directo en web)
-  Future<String?> getIdToken() async {
+  /// Obtiene el token de autenticación (ID token en móvil, Access token en web)
+  Future<Map<String, String?>> getAuthTokens() async {
     try {
-      print('🔑 Obteniendo ID token...');
-      
+      print('🔑 Obteniendo tokens de autenticación...');
+
       // Prioridad 1: Firebase (móvil)
       if (!kIsWeb && _firebaseAuth != null) {
         final User? user = FirebaseAuth.instance.currentUser;
@@ -75,27 +75,44 @@ class GoogleSignInService {
           final String? idToken = await user.getIdToken();
           if (idToken != null) {
             print('✅ Firebase ID token obtenido');
-            return idToken;
+            return {'idToken': idToken};
           }
         }
       }
-      
+
       // Prioridad 2: Google directo (web o fallback)
       final GoogleSignInAccount? account = _googleSignIn.currentUser ?? await _googleSignIn.signInSilently();
       if (account != null) {
         final GoogleSignInAuthentication auth = await account.authentication;
-        if (auth.idToken != null) {
-          print('✅ Google ID token obtenido');
-          return auth.idToken;
+
+        // En web, usar accessToken ya que idToken puede no estar disponible
+        if (kIsWeb) {
+          if (auth.accessToken != null) {
+            print('✅ Google Access token obtenido (Web)');
+            return {'accessToken': auth.accessToken};
+          }
+        } else {
+          // En móvil, preferir idToken
+          if (auth.idToken != null) {
+            print('✅ Google ID token obtenido (Mobile)');
+            return {'idToken': auth.idToken};
+          }
         }
       }
-      
-      print('❌ No se pudo obtener ID token');
-      return null;
+
+      print('❌ No se pudo obtener token de autenticación');
+      return {};
     } catch (e) {
-      print('❌ Error al obtener ID token: $e');
-      return null;
+      print('❌ Error al obtener tokens: $e');
+      return {};
     }
+  }
+
+  /// Obtiene el token de ID (para mantener compatibilidad con código existente)
+  @Deprecated('Usa getAuthTokens() que soporta web y móvil')
+  Future<String?> getIdToken() async {
+    final tokens = await getAuthTokens();
+    return tokens['idToken'];
   }
 
   /// Obtiene el access token de Google

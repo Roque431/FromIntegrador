@@ -23,15 +23,18 @@ class HistoryConsultationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: isDark 
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -73,7 +76,7 @@ class HistoryConsultationCard extends StatelessWidget {
                   Text(
                     date,
                     style: TextStyle(
-                      color: colors.tertiary.withValues(alpha: 0.5),
+                      color: colors.onSurfaceVariant,
                       fontSize: 12,
                     ),
                   ),
@@ -86,7 +89,7 @@ class HistoryConsultationCard extends StatelessWidget {
                 question,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: colors.tertiary,
+                      color: colors.onSurface,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -97,7 +100,7 @@ class HistoryConsultationCard extends StatelessWidget {
               Text(
                 answer,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.tertiary.withValues(alpha: 0.6),
+                      color: colors.onSurfaceVariant,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

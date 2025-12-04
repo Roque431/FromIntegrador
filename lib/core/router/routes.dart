@@ -20,6 +20,10 @@ class AppRoutes {
   static const String contentDetail = 'content-detail';
   static const String legalMap = 'legal-map';
 
+  // Rutas de chat privado
+  static const String conversations = 'conversations';
+  static const String chatPrivado = 'chat-privado';
+
   // Rutas de abogado
   static const String lawyerHome = 'lawyer-home';
   static const String lawyerProfile = 'lawyer-profile';

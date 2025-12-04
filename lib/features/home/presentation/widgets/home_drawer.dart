@@ -3,14 +3,38 @@ import 'package:flutter_application_1/features/home/presentation/widgets/recent_
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../login/presentation/providers/login_notifier.dart';
+import '../../../history/presentation/providers/historial_notifier.dart';
 import 'drawer_menu_item.dart';
 
-class HomeDrawer extends StatelessWidget {
+class HomeDrawer extends StatefulWidget {
   const HomeDrawer({super.key});
 
   @override
+  State<HomeDrawer> createState() => _HomeDrawerState();
+}
+
+class _HomeDrawerState extends State<HomeDrawer> {
+  @override
+  void initState() {
+    super.initState();
+    // Cargar consultas recientes al abrir el drawer
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRecentConsultations();
+    });
+  }
+
+  void _loadRecentConsultations() {
+    final historialNotifier = context.read<HistorialNotifier>();
+    if (historialNotifier.conversaciones.isEmpty) {
+      historialNotifier.loadConversaciones();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     
     // Obtener información del usuario logeado
     final loginNotifier = context.watch<LoginNotifier>();
@@ -18,9 +42,13 @@ class HomeDrawer extends StatelessWidget {
     final userName = currentUser?.fullName ?? 'Usuario';
     final userInitials = currentUser?.initials ?? 'U';
     final userPlan = currentUser?.isPro == true ? 'Pro' : 'Free';
+    
+    // Obtener consultas recientes
+    final historialNotifier = context.watch<HistorialNotifier>();
+    final recentConsultations = historialNotifier.conversaciones.take(5).toList();
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surfaceContainerHighest,
       child: SafeArea(
         child: Column(
           children: [
@@ -30,15 +58,24 @@ class HomeDrawer extends StatelessWidget {
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Buscar consulta',
-                  prefixIcon: Icon(Icons.search, color: colors.tertiary.withOpacity(0.5)),
+                  hintStyle: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search, 
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
                   filled: true,
-                  fillColor: Colors.grey.shade100,
+                  fillColor: isDark 
+                      ? colorScheme.surface.withValues(alpha: 0.5)
+                      : Colors.grey.shade100,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
+                style: TextStyle(color: colorScheme.onSurface),
               ),
             ),
 
@@ -48,7 +85,7 @@ class HomeDrawer extends StatelessWidget {
             DrawerMenuItem(
               icon: Icons.chat_bubble_outline,
               title: 'Nueva Consulta',
-              color: colors.secondary,
+              color: colorScheme.primary,
               onTap: () {
                 Navigator.pop(context);
                 // TODO: Navegar a nueva consulta o limpiar el chat actual
@@ -62,7 +99,7 @@ class HomeDrawer extends StatelessWidget {
             DrawerMenuItem(
               icon: Icons.history,
               title: 'Historial de Consultas',
-              color: colors.secondary,
+              color: colorScheme.primary,
               onTap: () {
                 Navigator.pop(context);
                 context.push('/history'); // ✅ Apila la ruta para poder regresar
@@ -72,7 +109,7 @@ class HomeDrawer extends StatelessWidget {
             DrawerMenuItem(
               icon: Icons.map_outlined,
               title: 'Mapa Legal',
-              color: colors.secondary,
+              color: colorScheme.primary,
               onTap: () {
                 Navigator.pop(context);
                 context.push('/legal-map');
@@ -83,15 +120,26 @@ class HomeDrawer extends StatelessWidget {
             DrawerMenuItem(
               icon: Icons.forum_outlined,
               title: 'Foro de la comunidad',
-              color: colors.secondary,
+              color: colorScheme.primary,
               onTap: () {
                 Navigator.pop(context);
                 context.push('/forum'); // ✅ Apila la ruta para poder regresar
               },
             ),
+            
+            // 👇 CHAT PRIVADO - Mensajes 1:1
+            DrawerMenuItem(
+              icon: Icons.message_outlined,
+              title: 'Mis Conversaciones',
+              color: colorScheme.primary,
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/conversations'); // ✅ Chat privado con profesionistas
+              },
+            ),
 
             const SizedBox(height: 8),
-            Divider(color: colors.outline),
+            Divider(color: colorScheme.outline),
             
             // Título de consultas recientes
             Padding(
@@ -101,8 +149,8 @@ class HomeDrawer extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Consultas Recientes',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: colors.tertiary.withOpacity(0.6),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                             fontWeight: FontWeight.w500,
                           ),
                     ),
@@ -113,32 +161,57 @@ class HomeDrawer extends StatelessWidget {
 
             // Lista de consultas recientes
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                children: const [
-                  RecentConsultationItem(
-                    category: 'Laboral',
-                    title: '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-                    subtitle: 'LexIA: Según el artículo 50 de la ley federal...',
-                    date: '21 de octubre de 2025',
-                    consultationId: 'consulta_1', // ID de ejemplo
-                  ),
-                  RecentConsultationItem(
-                    category: 'Laboral',
-                    title: '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-                    subtitle: 'LexIA: Según el artículo 50 de la ley federal...',
-                    date: '21 de octubre de 2025',
-                    consultationId: 'consulta_2',
-                  ),
-                  RecentConsultationItem(
-                    category: 'Laboral',
-                    title: '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-                    subtitle: 'LexIA: Según el artículo 50 de la ley federal...',
-                    date: '21 de octubre de 2025',
-                    consultationId: 'consulta_3',
-                  ),
-                ],
-              ),
+              child: historialNotifier.isLoading
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : recentConsultations.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 48,
+                                  color: colorScheme.onSurface.withValues(alpha: 0.3),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Sin consultas recientes',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Inicia una nueva consulta',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          itemCount: recentConsultations.length,
+                          itemBuilder: (context, index) {
+                            final consulta = recentConsultations[index];
+                            return RecentConsultationItem(
+                              category: consulta.clusterDescripcion,
+                              title: consulta.titulo ?? 'Consulta sin título',
+                              subtitle: consulta.ultimoMensaje ?? 'Sin mensajes',
+                              date: consulta.fechaFormateada,
+                              consultationId: consulta.id,
+                            );
+                          },
+                        ),
             ),
 
             // Perfil del usuario
@@ -146,7 +219,7 @@ class HomeDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: colors.outline),
+                  top: BorderSide(color: colorScheme.outline),
                 ),
               ),
               child: InkWell(
@@ -160,8 +233,11 @@ class HomeDrawer extends StatelessWidget {
                   child: Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: colors.secondary,
-                        child: Text(userInitials, style: const TextStyle(color: Colors.white)),
+                        backgroundColor: colorScheme.primary,
+                        child: Text(
+                          userInitials, 
+                          style: TextStyle(color: colorScheme.onPrimary),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -171,9 +247,9 @@ class HomeDrawer extends StatelessWidget {
                           children: [
                             Text(
                               userName,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: colors.tertiary,
+                                    color: colorScheme.onSurface,
                                   ),
                             ),
                             const SizedBox(height: 4),
@@ -182,16 +258,16 @@ class HomeDrawer extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: currentUser?.isPro == true 
                                     ? Colors.amber.withValues(alpha: 0.2)
-                                    : colors.secondary.withValues(alpha: 0.15),
+                                    : colorScheme.primary.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 userPlan,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: theme.textTheme.bodySmall?.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: currentUser?.isPro == true 
                                           ? Colors.amber.shade700
-                                          : colors.secondary,
+                                          : colorScheme.primary,
                                       fontSize: 10,
                                     ),
                               ),
@@ -199,7 +275,7 @@ class HomeDrawer extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.chevron_right, color: colors.tertiary),
+                      Icon(Icons.chevron_right, color: colorScheme.onSurface),
                     ],
                   ),
                 ),

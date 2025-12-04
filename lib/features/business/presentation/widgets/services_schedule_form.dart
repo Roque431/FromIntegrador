@@ -30,7 +30,7 @@ class ServicesScheduleForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,14 +40,14 @@ class ServicesScheduleForm extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: colors.onSurface,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Selecciona los servicios que ofreces (puedes elegir varios)',
           style: TextStyle(
-            color: colors.onSurface.withValues(alpha: 0.7),
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 16),
@@ -63,18 +63,18 @@ class ServicesScheduleForm extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? colors.secondary : colors.surface,
+                  color: isSelected ? colorScheme.secondary : colorScheme.surfaceContainerHighest,
                   border: Border.all(
                     color: isSelected
-                        ? colors.secondary
-                        : colors.outline.withValues(alpha: 0.3),
+                        ? colorScheme.secondary
+                        : colorScheme.outline.withValues(alpha: 0.3),
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   service,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : colors.onSurface,
+                    color: isSelected ? Colors.white : colorScheme.onSurface,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
@@ -91,18 +91,31 @@ class ServicesScheduleForm extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: colors.onSurface,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
 
         TextFormField(
           controller: serviceDescriptionController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Descripción de tus servicios *',
             hintText:
                 'Describe detalladamente los servicios que ofreces, tu experiencia y lo que te hace único...',
-            border: OutlineInputBorder(),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.outline),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: colorScheme.primary, width: 2),
+            ),
+            filled: true,
+            fillColor: colorScheme.surfaceContainerHighest,
           ),
           maxLines: 5,
           maxLength: 500,
@@ -125,7 +138,7 @@ class ServicesScheduleForm extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: colors.onSurface,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -136,7 +149,7 @@ class ServicesScheduleForm extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: colors.onSurface,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -151,18 +164,18 @@ class ServicesScheduleForm extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? colors.secondary : colors.surface,
+                  color: isSelected ? colorScheme.secondary : colorScheme.surfaceContainerHighest,
                   border: Border.all(
                     color: isSelected
-                        ? colors.secondary
-                        : colors.outline.withValues(alpha: 0.3),
+                        ? colorScheme.secondary
+                        : colorScheme.outline.withValues(alpha: 0.3),
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   day,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : colors.onSurface,
+                    color: isSelected ? Colors.white : colorScheme.onSurface,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     fontSize: 13,
                   ),
@@ -180,11 +193,24 @@ class ServicesScheduleForm extends StatelessWidget {
             Expanded(
               child: TextFormField(
                 controller: openingTimeController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Hora de apertura *',
                   hintText: '09:00',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.access_time),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.outline),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  prefixIcon: Icon(Icons.access_time, color: colorScheme.onSurface.withValues(alpha: 0.7)),
                 ),
                 readOnly: true,
                 onTap: onOpeningTimeTap,
@@ -200,11 +226,24 @@ class ServicesScheduleForm extends StatelessWidget {
             Expanded(
               child: TextFormField(
                 controller: closingTimeController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Hora de cierre *',
                   hintText: '18:00',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.access_time),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.outline),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: colorScheme.primary, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  prefixIcon: Icon(Icons.access_time, color: colorScheme.onSurface.withValues(alpha: 0.7)),
                 ),
                 readOnly: true,
                 onTap: onClosingTimeTap,

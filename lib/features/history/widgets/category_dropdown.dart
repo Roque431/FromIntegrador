@@ -22,6 +22,7 @@ class CategoryDropdown extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final colors = Theme.of(context).colorScheme;
+		final isDark = Theme.of(context).brightness == Brightness.dark;
 
 		return SizedBox(
 			width: 140,
@@ -32,25 +33,25 @@ class CategoryDropdown extends StatelessWidget {
 									value: c,
 									child: Text(
 										c,
-										style: TextStyle(color: colors.tertiary),
+										style: TextStyle(color: colors.onSurface),
 									),
 								))
 						.toList(),
 				onChanged: onChanged,
 				decoration: InputDecoration(
 					hintText: 'Categoría',
-					hintStyle: TextStyle(color: Colors.grey.shade500),
+					hintStyle: TextStyle(color: colors.onSurfaceVariant),
 					filled: true,
-					fillColor: Colors.white,
+					fillColor: colors.surfaceContainerHighest,
 					border: OutlineInputBorder(
 						borderRadius: BorderRadius.circular(12),
 						borderSide: BorderSide.none,
 					),
 					contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
 				),
-				icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.tertiary),
-				dropdownColor: Colors.white,
-				style: TextStyle(color: colors.tertiary),
+				icon: Icon(Icons.keyboard_arrow_down_rounded, color: colors.onSurfaceVariant),
+				dropdownColor: isDark ? colors.surfaceContainerHighest : colors.surface,
+				style: TextStyle(color: colors.onSurface),
 			),
 		);
 	}

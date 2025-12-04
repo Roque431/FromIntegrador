@@ -17,10 +17,12 @@ class UserModel extends User {
 
   // From JSON - Compatible con backend LexIA
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    // Si viene del login, el usuario está anidado en 'usuario'
-    final Map<String, dynamic> userData = json['usuario'] != null 
+    // Si viene del login, el usuario puede estar anidado en 'usuario' o 'user'
+    final Map<String, dynamic> userData = json['usuario'] != null
         ? Map<String, dynamic>.from(json['usuario'])
-        : Map<String, dynamic>.from(json);
+        : (json['user'] != null
+            ? Map<String, dynamic>.from(json['user'])
+            : Map<String, dynamic>.from(json));
     
     // Detectar si es PRO basándose en suscripcion_id o suscripcion.tipo
     final int? suscripcionId = userData['suscripcion_id'] is int
@@ -50,8 +52,8 @@ class UserModel extends User {
       id: '${userData['id'] ?? userData['_id'] ?? ''}',
       email: '${userData['email'] ?? ''}',
       name: '${userData['nombre'] ?? userData['name'] ?? ''}',
-      lastName: userData['apellidos']?.toString(),
-      phone: userData['telefono']?.toString(),
+      lastName: userData['apellidos']?.toString() ?? userData['apellido']?.toString(),
+      phone: userData['telefono']?.toString() ?? userData['phone']?.toString(),
       isPro: isPro,
       createdAt: createdAt,
       userType: userType,

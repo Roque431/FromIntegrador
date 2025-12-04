@@ -51,6 +51,18 @@ import '../../features/legal_content/presentation/providers/legal_content_notifi
 // Location Feature
 import '../../features/location/data/datasources/location_datasource.dart';
 
+// Forum Feature
+import '../../features/forum/data/repository/foro_repository.dart';
+import '../../features/forum/presentation/providers/foro_notifier.dart';
+
+// History Feature
+import '../../features/history/data/repository/historial_repository.dart';
+import '../../features/history/presentation/providers/historial_notifier.dart';
+
+// Chat Privado Feature
+import '../../features/chat/data/repository/chat_privado_repository.dart';
+import '../../features/chat/presentation/providers/chat_privado_notifier.dart';
+
 // Security - Secure Storage
 import '../storage/secure_token_repository.dart';
 
@@ -160,6 +172,8 @@ Future<void> initializeDependencies() async {
     () => ConsultationDataSourceImpl(
       apiClient: sl(),
       sharedPreferences: sl(),
+      secureTokenRepository: sl(),
+      loginRepository: sl(),
     ),
   );
 
@@ -179,6 +193,7 @@ Future<void> initializeDependencies() async {
     () => HomeNotifier(
       sendMessageUseCase: sl(),
       getChatHistoryUseCase: sl(),
+        loginRepository: sl(),
     ),
   );
 
@@ -248,5 +263,56 @@ Future<void> initializeDependencies() async {
   // Data sources
   sl.registerLazySingleton<LocationDataSource>(
     () => LocationDataSourceImpl(apiClient: sl()),
+  );
+
+  // ============================================
+  // Forum Feature
+  // ============================================
+
+  // Repository
+  sl.registerLazySingleton<ForoRepository>(
+    () => ForoRepository(apiClient: sl()),
+  );
+
+  // Provider - Factory para que obtenga userId del LoginRepository
+  sl.registerFactoryParam<ForoNotifier, String?, void>(
+    (userId, _) => ForoNotifier(
+      repository: sl(),
+      currentUserId: userId,
+    ),
+  );
+
+  // ============================================
+  // History Feature
+  // ============================================
+
+  // Repository
+  sl.registerLazySingleton<HistorialRepository>(
+    () => HistorialRepository(apiClient: sl()),
+  );
+
+  // Provider - Factory para que obtenga userId del LoginRepository
+  sl.registerFactoryParam<HistorialNotifier, String?, void>(
+    (userId, _) => HistorialNotifier(
+      repository: sl(),
+      currentUserId: userId,
+    ),
+  );
+
+  // ============================================
+  // Chat Privado Feature
+  // ============================================
+
+  // Repository
+  sl.registerLazySingleton<ChatPrivadoRepository>(
+    () => ChatPrivadoRepository(apiClient: sl()),
+  );
+
+  // Provider - Factory para que obtenga userId del LoginRepository
+  sl.registerFactoryParam<ChatPrivadoNotifier, String?, void>(
+    (userId, _) => ChatPrivadoNotifier(
+      repository: sl(),
+      currentUserId: userId,
+    ),
   );
 }

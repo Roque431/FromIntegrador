@@ -21,15 +21,18 @@ class ProfileMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: isDark 
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -40,7 +43,7 @@ class ProfileMenuItem extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.1),
+            color: iconColor.withValues(alpha: isDark ? 0.2 : 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: iconColor, size: 24),
@@ -49,7 +52,7 @@ class ProfileMenuItem extends StatelessWidget {
           title,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: colors.tertiary,
+                color: colors.onSurface,
               ),
         ),
         subtitle: subtitle != null
@@ -58,14 +61,14 @@ class ProfileMenuItem extends StatelessWidget {
                 child: Text(
                   subtitle!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colors.tertiary.withValues(alpha: 0.6),
+                        color: colors.onSurfaceVariant,
                       ),
                 ),
               )
             : null,
         trailing: trailing ?? Icon(
           Icons.chevron_right,
-          color: colors.tertiary.withValues(alpha: 0.3),
+          color: colors.onSurfaceVariant,
         ),
         onTap: onTap,
       ),

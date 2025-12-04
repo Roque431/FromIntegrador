@@ -10,27 +10,11 @@ class SecureTokenRepository {
       // Habilitar backup encryption para Android
       preferencesKeyPrefix: 'lexia_secure_',
       sharedPreferencesName: 'lexia_secure_prefs',
-      // Requerir autenticación para acceder a datos sensibles
-      resetOnError: true,
     ),
     iOptions: IOSOptions(
-      // Keychain accessibility - datos solo disponibles cuando el dispositivo está desbloqueado
-      accessibility: KeychainItemAccessibility.first_unlock_this_device,
       groupId: 'group.com.lexia.app',
       synchronizable: false,
       // Requerir autenticación para acceder a datos sensibles
-      accountName: 'LexiaApp',
-    ),
-    lOptions: LinuxOptions(
-      resetOnError: true,
-    ),
-    wOptions: WindowsOptions(
-      resetOnError: true,
-    ),
-    mOptions: MacOsOptions(
-      groupId: 'group.com.lexia.app',
-      accessibility: KeychainItemAccessibility.first_unlock_this_device,
-      synchronizable: false,
       accountName: 'LexiaApp',
     ),
   );

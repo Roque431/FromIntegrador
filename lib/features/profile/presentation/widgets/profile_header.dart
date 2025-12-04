@@ -26,10 +26,10 @@ class ProfileHeader extends StatelessWidget {
           child: imageUrl == null
               ? Text(
                   initials,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: colors.onSecondary,
                   ),
                 )
               : null,
@@ -41,7 +41,7 @@ class ProfileHeader extends StatelessWidget {
           name,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: colors.tertiary,
+                color: colors.onSurface,
               ),
         ),
       ],

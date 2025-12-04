@@ -5,7 +5,7 @@ class DocumentUploadSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -15,7 +15,7 @@ class DocumentUploadSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: colors.tertiary,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),
@@ -23,7 +23,7 @@ class DocumentUploadSection extends StatelessWidget {
         Text(
           'Para completar el registro, necesitamos los siguientes documentos:',
           style: TextStyle(
-            color: colors.tertiary,
+            color: colorScheme.onSurface.withValues(alpha: 0.8),
             fontWeight: FontWeight.w600,
             fontSize: 15,
           ),
@@ -35,7 +35,7 @@ class DocumentUploadSection extends StatelessWidget {
           title: 'Identificación Oficial del Propietario',
           description: 'INE, Pasaporte o Cédula Profesional',
           required: true,
-          color: colors.secondary,
+          color: colorScheme.secondary,
         ),
         const SizedBox(height: 12),
 
@@ -44,7 +44,7 @@ class DocumentUploadSection extends StatelessWidget {
           title: 'Comprobante de Domicilio',
           description: 'No mayor a 3 meses del negocio',
           required: true,
-          color: colors.tertiary,
+          color: colorScheme.primary,
         ),
         const SizedBox(height: 12),
 
@@ -53,29 +53,29 @@ class DocumentUploadSection extends StatelessWidget {
           title: 'Registro del Negocio',
           description: 'RFC, Acta Constitutiva o Alta en Hacienda',
           required: true,
-          color: const Color(0xFFB8907D),
+          color: colorScheme.secondary,
         ),
         const SizedBox(height: 20),
 
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.05),
+            color: colorScheme.primaryContainer.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
+                  Icon(Icons.info_outline, color: colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     'Información Importante',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade900,
+                      color: colorScheme.onSurface,
                       fontSize: 15,
                     ),
                   ),
@@ -88,7 +88,7 @@ class DocumentUploadSection extends StatelessWidget {
                 '• Te notificaremos por email el resultado\n'
                 '• Todos los documentos son tratados de forma confidencial',
                 style: TextStyle(
-                  color: Colors.blue.shade900,
+                  color: colorScheme.onSurface.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
               ),
@@ -117,11 +117,12 @@ class _DocumentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
         border: Border.all(color: color.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -148,7 +149,7 @@ class _DocumentItem extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: colors.tertiary,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -157,14 +158,14 @@ class _DocumentItem extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.red.shade100,
+                          color: colorScheme.errorContainer,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'Requerido',
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.red.shade900,
+                            color: colorScheme.onErrorContainer,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -175,7 +176,7 @@ class _DocumentItem extends StatelessWidget {
                 Text(
                   description,
                   style: TextStyle(
-                    color: colors.tertiary.withValues(alpha: 0.75),
+                    color: colorScheme.onSurface.withValues(alpha: 0.75),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),

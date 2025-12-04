@@ -199,7 +199,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
                           },
                           child: Text(
                             'Atrás',
-                            style: TextStyle(color: colors.tertiary),
+                            style: TextStyle(color: colors.onSurface),
                           ),
                         ),
                     ],

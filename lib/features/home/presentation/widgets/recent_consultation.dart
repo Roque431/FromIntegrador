@@ -7,7 +7,7 @@ class RecentConsultationItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final String date;
-  final String? consultationId; // 👈 NUEVO - ID de la consulta
+  final String? consultationId;
 
   const RecentConsultationItem({
     super.key,
@@ -20,19 +20,19 @@ class RecentConsultationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       elevation: 0,
-      color: Colors.grey.shade50,
+      color: colorScheme.surfaceContainerHighest,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
         onTap: () {
-          // 👇 NAVEGACIÓN ACTUALIZADA
-          Navigator.pop(context); // Cerrar el drawer primero
+          Navigator.pop(context);
           context.pushNamed(
             AppRoutes.consultationDetail,
             pathParameters: {'id': consultationId ?? 'demo'},
@@ -50,13 +50,13 @@ class RecentConsultationItem extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: colors.secondary.withValues(alpha: 0.2),
+                      color: colorScheme.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       category,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.secondary,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary,
                             fontWeight: FontWeight.w600,
                           ),
                     ),
@@ -64,8 +64,8 @@ class RecentConsultationItem extends StatelessWidget {
                   const Spacer(),
                   Text(
                     date,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colors.tertiary.withValues(alpha: 0.5),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                   ),
                 ],
@@ -75,9 +75,9 @@ class RecentConsultationItem extends StatelessWidget {
               // Título
               Text(
                 title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: colors.tertiary,
+                      color: colorScheme.onSurface,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -87,8 +87,8 @@ class RecentConsultationItem extends StatelessWidget {
               // Subtítulo
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colors.tertiary.withValues(alpha: 0.6),
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

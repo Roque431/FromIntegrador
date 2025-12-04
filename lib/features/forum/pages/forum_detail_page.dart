@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_expert_comment.dart';
-import 'package:flutter_application_1/features/forum/widgests/forum_ia_response.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_user_post.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:provider/provider.dart';
+import '../presentation/providers/foro_notifier.dart';
 
 class ForumDetailPage extends StatefulWidget {
   final String postId;
@@ -18,59 +18,68 @@ class ForumDetailPage extends StatefulWidget {
 }
 
 class _ForumDetailPageState extends State<ForumDetailPage> {
-  bool _isLiked = false;
-  int _likes = 8;
+  @override
+  void initState() {
+    super.initState();
+    // Cargar publicación al entrar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ForoNotifier>().loadPublicacion(widget.postId);
+    });
+  }
 
-  // TODO: Cargar datos reales desde la API
-  final Map<String, dynamic> _postData = {
-    'userName': 'Ramos Molina',
-    'userInitials': 'RA',
-    'date': '29/05/2025',
-    'category': 'Laboral',
-    'tags': ['Despido', 'Liquidacion'],
-    'question': '¿Qué pasa si me despiden y no me pagan mi liquidación?',
-  };
-
-  final String _iaResponse = """**Respuesta Legal:**
-
-Según el Artículo 50 de la Ley Federal del Trabajo de México:
-
-**Tus Derechos:**
-
-- Tienes derecho a recibir una indemnización de 3 meses de salario
-- Pago de prima de antigüedad (12 días de salario por año trabajado)
-- Salarios vencidos desde el despido hasta que se cubra la indemnización
-- Prima vacacional proporcional - Aguinaldo proporcional
-
-**Marco Legal:**
-
-**Ley Federal del Trabajo - Artículo 50:**
-
-"Si en el juicio correspondiente no comprueba el patrón las causas de la rescisión, el trabajador tendrá derecho, además, a que se le paguen los salarios vencidos desde la fecha del despido hasta por un período máximo de doce meses."
-""";
-
-  final List<Map<String, dynamic>> _expertComments = [
-    {
-      'userName': 'Tu',
-      'userInitials': 'LT',
-      'date': '29/05/2025',
-      'comment': 'En esos casos debería acudir a tal y hacer lo siguiente...',
-      'likes': 8,
-      'replies': 4,
-    },
-    {
-      'userName': 'Carlos',
-      'userInitials': 'LT',
-      'date': '29/05/2025',
-      'comment': 'En esos casos debería acudir a tal y hacer lo siguiente...',
-      'likes': 8,
-      'replies': 4,
-    },
-  ];
+  void _showAddCommentDialog(BuildContext context) {
+    final notifier = context.read<ForoNotifier>();
+    final commentController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Agregar comentario'),
+        content: TextField(
+          controller: commentController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Escribe tu comentario aquí...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (commentController.text.trim().isNotEmpty) {
+                Navigator.pop(ctx);
+                final result = await notifier.agregarComentario(
+                  publicacionId: widget.postId,
+                  contenido: commentController.text.trim(),
+                );
+                if (result != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Comentario agregado')),
+                  );
+                } else if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(notifier.errorMessage ?? 'Error al comentar')),
+                  );
+                }
+              }
+            },
+            child: const Text('Publicar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final notifier = context.watch<ForoNotifier>();
+    final publicacion = notifier.publicacionActual;
+    final comentarios = notifier.comentariosActuales;
 
     return Scaffold(
       backgroundColor: colors.primary,
@@ -102,76 +111,158 @@ Según el Artículo 50 de la Ley Federal del Trabajo de México:
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Post original del usuario
-              ForumUserPost(
-                userName: _postData['userName'],
-                userInitials: _postData['userInitials'],
-                date: _postData['date'],
-                category: _postData['category'],
-                tags: List<String>.from(_postData['tags']),
-                question: _postData['question'],
-                likes: _likes,
-                comments: _expertComments.length,
-                isLiked: _isLiked,
-                onLike: () {
-                  setState(() {
-                    _isLiked = !_isLiked;
-                    _likes += _isLiked ? 1 : -1;
-                  });
-                },
+      body: _buildBody(context, notifier, publicacion, comentarios, colors),
+      // Botón para agregar comentario
+      floatingActionButton: publicacion != null
+          ? FloatingActionButton.extended(
+              onPressed: () => _showAddCommentDialog(context),
+              backgroundColor: colors.secondary,
+              icon: const Icon(Icons.add_comment, color: Colors.white),
+              label: const Text('Comentar', style: TextStyle(color: Colors.white)),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildBody(BuildContext context, ForoNotifier notifier, dynamic publicacion, List comentarios, ColorScheme colors) {
+    if (notifier.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (notifier.hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: colors.error),
+            const SizedBox(height: 16),
+            Text(
+              notifier.errorMessage ?? 'Error al cargar',
+              style: TextStyle(color: colors.tertiary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => notifier.loadPublicacion(widget.postId),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (publicacion == null) {
+      return Center(
+        child: Text(
+          'Publicación no encontrada',
+          style: TextStyle(color: colors.tertiary),
+        ),
+      );
+    }
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Post original del usuario
+            ForumUserPost(
+              userName: publicacion.autorNombre,
+              userInitials: publicacion.autorInitials,
+              date: publicacion.fechaFormateada,
+              category: publicacion.categoriaNombre,
+              tags: const [],
+              question: publicacion.titulo,
+              likes: publicacion.likes,
+              comments: comentarios.length,
+              isLiked: publicacion.yaLeDioLike,
+              onLike: () {
+                notifier.toggleLike(publicacion.id);
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Contenido completo de la publicación
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
               ),
-
-              const SizedBox(height: 16),
-
-              // Respuesta de LexIA
-              ForumIAResponse(response: _iaResponse),
-
-              const SizedBox(height: 24),
-
-              // Título de comentarios
-              Text(
-                'Comentarios de usuarios expertos',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colors.tertiary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Descripción',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.tertiary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    publicacion.contenido,
+                    style: TextStyle(
+                      color: colors.tertiary.withOpacity(0.8),
+                      fontSize: 14,
                     ),
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-              // Lista de comentarios de expertos
-              ..._expertComments.map((comment) => ForumExpertComment(
-                    userName: comment['userName'],
-                    userInitials: comment['userInitials'],
-                    date: comment['date'],
-                    comment: comment['comment'],
-                    likes: comment['likes'],
-                    replies: comment['replies'],
+            // Título de comentarios
+            Text(
+              'Comentarios (${comentarios.length})',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.tertiary,
+                  ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Lista de comentarios
+            if (comentarios.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    'No hay comentarios aún.\n¡Sé el primero en comentar!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.tertiary.withOpacity(0.6),
+                    ),
+                  ),
+                ),
+              )
+            else
+              ...comentarios.map((comment) => ForumExpertComment(
+                    userName: comment.autorNombre,
+                    userInitials: comment.autorInitials,
+                    date: comment.fechaFormateada,
+                    comment: comment.contenido,
+                    likes: comment.likes,
+                    replies: 0,
                     onLike: () {
-                      // TODO: Implementar like
+                      // TODO: Like a comentario
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Like agregado')),
+                        const SnackBar(content: Text('Función próximamente')),
                       );
                     },
                   )),
 
-              const SizedBox(height: 80), // Espacio para el botón flotante
-            ],
-          ),
+            const SizedBox(height: 80), // Espacio para el botón flotante
+          ],
         ),
-      ),
-      // Botón para agregar comentario
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddCommentDialog(context),
-        backgroundColor: colors.secondary,
-        icon: const Icon(Icons.add_comment, color: Colors.white),
-        label: const Text('Comentar', style: TextStyle(color: Colors.white)),
       ),
     );
   }
@@ -241,43 +332,6 @@ Según el Artículo 50 de la Ley Federal del Trabajo de México:
               );
             },
             child: const Text('Enviar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddCommentDialog(BuildContext context) {
-    final commentController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Agregar comentario'),
-        content: TextField(
-          controller: commentController,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText: 'Escribe tu comentario aquí...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (commentController.text.trim().isNotEmpty) {
-                Navigator.pop(context);
-                // TODO: Enviar comentario a la API
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Comentario agregado')),
-                );
-              }
-            },
-            child: const Text('Publicar'),
           ),
         ],
       ),
