@@ -11,6 +11,7 @@ class ForumUserPost extends StatelessWidget {
   final int comments;
   final bool isLiked;
   final VoidCallback onLike;
+  final VoidCallback? onDislike;
 
   const ForumUserPost({
     super.key,
@@ -24,6 +25,7 @@ class ForumUserPost extends StatelessWidget {
     required this.comments,
     required this.isLiked,
     required this.onLike,
+    this.onDislike,
   });
 
   Color _getCategoryColor(String category) {
@@ -127,37 +129,50 @@ class ForumUserPost extends StatelessWidget {
           // Footer
           Row(
             children: [
-              InkWell(
-                onTap: onLike,
-                child: Row(
-                  children: [
-                    Icon(
-                      isLiked ? Icons.star : Icons.star_outline,
-                      size: 20,
-                      color: isLiked ? Colors.amber : colors.tertiary.withOpacity(0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$likes',
-                      style: TextStyle(
-                        color: colors.tertiary.withOpacity(0.6),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
+              // Useful / Not useful
               Row(
                 children: [
-                  Icon(Icons.people_outline, size: 20, color: colors.tertiary.withOpacity(0.6)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$comments',
-                    style: TextStyle(
-                      color: colors.tertiary.withOpacity(0.6),
-                      fontSize: 14,
+                  InkWell(
+                    onTap: onLike,
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.thumb_up,
+                          size: 20,
+                          color: colors.tertiary.withOpacity(0.8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$likes',
+                          style: TextStyle(
+                            color: colors.tertiary.withOpacity(0.6),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  InkWell(
+                    onTap: onDislike,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2),
+                      child: Icon(Icons.thumb_down_outlined, size: 20, color: colors.tertiary.withOpacity(0.6)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.people_outline, size: 20, color: colors.tertiary.withOpacity(0.6)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$comments',
+                        style: TextStyle(
+                          color: colors.tertiary.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

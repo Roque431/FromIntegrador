@@ -165,6 +165,33 @@ class ForoRepository {
     }
   }
 
+  /// Reportar utilidad de una publicación (útil / no útil)
+  Future<bool> reportUtilidad({
+    required String publicacionId,
+    required String usuarioId,
+    required bool utilidad,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/feedback',
+        body: {
+          'usuarioId': usuarioId,
+          'tipo': 'foro_utilidad',
+          'data': {
+            'publicacionId': publicacionId,
+            'utilidad': utilidad,
+          }
+        },
+        requiresAuth: true,
+      );
+
+      return response['success'] == true;
+    } catch (e) {
+      print('❌ Error reportando utilidad: $e');
+      rethrow;
+    }
+  }
+
   /// Buscar publicaciones
   Future<List<PublicacionModel>> buscarPublicaciones({
     required String query,

@@ -182,6 +182,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               onLike: () {
                 notifier.toggleLike(publicacion.id);
               },
+              onDislike: () => notifier.reportUtilidad(publicacion.id, false),
             ),
 
             const SizedBox(height: 16),

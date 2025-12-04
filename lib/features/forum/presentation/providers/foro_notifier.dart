@@ -308,6 +308,27 @@ class ForoNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reportar utilidad (útil / no útil) para una publicación
+  Future<void> reportUtilidad(String publicacionId, bool utilidad) async {
+    if (_currentUserId == null) return;
+
+    try {
+      final success = await _repository.reportUtilidad(
+        publicacionId: publicacionId,
+        usuarioId: _currentUserId,
+        utilidad: utilidad,
+      );
+
+      if (!success) {
+        _errorMessage = 'No se pudo registrar la utilidad';
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
   void _sortPublicaciones() {
     switch (_filtroActual) {
       case 'Populares':

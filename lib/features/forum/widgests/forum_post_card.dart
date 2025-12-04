@@ -12,6 +12,7 @@ class ForumPostCard extends StatelessWidget {
   final int comments;
   final VoidCallback onTap;
   final VoidCallback onLike;
+  final VoidCallback? onDislike;
 
   const ForumPostCard({
     super.key,
@@ -26,6 +27,7 @@ class ForumPostCard extends StatelessWidget {
     required this.comments,
     required this.onTap,
     required this.onLike,
+    this.onDislike,
   });
 
   Color _getCategoryColor(String category) {
@@ -158,25 +160,44 @@ class ForumPostCard extends StatelessWidget {
               // Footer: Likes y comentarios
               Row(
                 children: [
-                  InkWell(
-                    onTap: onLike,
-                    borderRadius: BorderRadius.circular(20),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.star_outline, size: 18, color: colorScheme.onSurfaceVariant),
-                          const SizedBox(width: 4),
-                          Text(
-                            '$likes',
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
+                  // Useful / Not Useful actions
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: onLike,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.thumb_up, size: 18, color: colorScheme.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$likes',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      InkWell(
+                        onTap: onDislike,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.thumb_down_outlined, size: 18, color: colorScheme.onSurfaceVariant),
+                              const SizedBox(width: 4),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 16),
                   Row(

@@ -389,6 +389,7 @@ class _ForumPageState extends State<ForumPage> {
               );
             },
             onLike: () => notifier.toggleLike(post.id),
+            onDislike: () => notifier.reportUtilidad(post.id, false),
           );
         },
       ),
