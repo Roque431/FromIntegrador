@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_expert_comment.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_user_post.dart';
+import 'package:flutter_application_1/features/forum/widgests/forum_post_card.dart';
+import '../data/models/models.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../presentation/providers/foro_notifier.dart';
@@ -76,18 +78,18 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final notifier = context.watch<ForoNotifier>();
     final publicacion = notifier.publicacionActual;
     final comentarios = notifier.comentariosActuales;
 
     return Scaffold(
-      backgroundColor: colors.primary,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: colors.primary,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colors.secondary),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () {
             if (context.canPop()) {
               context.pop();
@@ -99,24 +101,24 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
         title: Text(
           'Volver al foro comunitario',
           style: TextStyle(
-            color: colors.tertiary,
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert, color: colors.tertiary),
+            icon: Icon(Icons.more_vert, color: colorScheme.onSurface),
             onPressed: () => _showOptionsMenu(context),
           ),
         ],
       ),
-      body: _buildBody(context, notifier, publicacion, comentarios, colors),
+      body: _buildBody(context, notifier, publicacion, comentarios, colorScheme),
       // Botón para agregar comentario
       floatingActionButton: publicacion != null
           ? FloatingActionButton.extended(
               onPressed: () => _showAddCommentDialog(context),
-              backgroundColor: colors.secondary,
+              backgroundColor: colorScheme.primary,
               icon: const Icon(Icons.add_comment, color: Colors.white),
               label: const Text('Comentar', style: TextStyle(color: Colors.white)),
             )
@@ -124,9 +126,9 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     );
   }
 
-  Widget _buildBody(BuildContext context, ForoNotifier notifier, dynamic publicacion, List comentarios, ColorScheme colors) {
+  Widget _buildBody(BuildContext context, ForoNotifier notifier, PublicacionModel? publicacion, List comentarios, ColorScheme colorScheme) {
     if (notifier.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator(color: colorScheme.primary));
     }
 
     if (notifier.hasError) {
@@ -134,11 +136,11 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: colors.error),
+            Icon(Icons.error_outline, size: 48, color: colorScheme.error),
             const SizedBox(height: 16),
             Text(
               notifier.errorMessage ?? 'Error al cargar',
-              style: TextStyle(color: colors.tertiary),
+              style: TextStyle(color: colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -155,7 +157,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
       return Center(
         child: Text(
           'Publicación no encontrada',
-          style: TextStyle(color: colors.tertiary),
+          style: TextStyle(color: colorScheme.onSurface),
         ),
       );
     }
@@ -188,7 +190,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -198,14 +200,14 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                     'Descripción',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: colors.tertiary,
+                          color: colorScheme.onSurface,
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     publicacion.contenido,
                     style: TextStyle(
-                      color: colors.tertiary.withOpacity(0.8),
+                      color: colorScheme.onSurface.withOpacity(0.9),
                       fontSize: 14,
                     ),
                   ),
@@ -220,7 +222,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               'Comentarios (${comentarios.length})',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: colors.tertiary,
+                    color: colorScheme.onSurface,
                   ),
             ),
 
@@ -231,7 +233,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -239,7 +241,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                     'No hay comentarios aún.\n¡Sé el primero en comentar!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: colors.tertiary.withOpacity(0.6),
+                      color: colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
                 ),
@@ -259,6 +261,70 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                       );
                     },
                   )),
+
+            const SizedBox(height: 24),
+
+            // Mis publicaciones (si la publicación es del usuario actual)
+            if (publicacion.usuarioId == notifier.currentUserId)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mis publicaciones',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  FutureBuilder<List<PublicacionModel>>(
+                    future: notifier.fetchMisPublicaciones(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox(height: 72, child: Center(child: CircularProgressIndicator()));
+                      }
+
+                      final items = snapshot.data ?? [];
+                      final others = items.where((p) => p.id != publicacion.id).toList();
+
+                      if (others.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text('No tienes otras publicaciones.', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                        );
+                      }
+
+                      return SizedBox(
+                        height: 160,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: others.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final p = others[index];
+                            return SizedBox(
+                              width: 300,
+                              child: ForumPostCard(
+                                userName: p.autorNombre,
+                                userInitials: p.autorInitials,
+                                date: p.fechaFormateada,
+                                category: p.categoriaNombre,
+                                tags: const [],
+                                question: p.titulo,
+                                excerpt: p.contenido.length > 120 ? '${p.contenido.substring(0, 120)}...' : p.contenido,
+                                likes: p.likes,
+                                comments: p.comentarios,
+                                onTap: () => context.pushNamed('forumDetail', pathParameters: {'id': p.id}),
+                                onLike: () {},
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
 
             const SizedBox(height: 80), // Espacio para el botón flotante
           ],

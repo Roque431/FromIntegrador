@@ -7,6 +7,8 @@ enum ForoState { initial, loading, success, error }
 class ForoNotifier extends ChangeNotifier {
   final ForoRepository _repository;
   final String? _currentUserId;
+  
+  String? get currentUserId => _currentUserId;
 
   ForoNotifier({
     required ForoRepository repository,
@@ -277,6 +279,17 @@ class ForoNotifier extends ChangeNotifier {
       _errorMessage = e.toString();
       _state = ForoState.error;
       notifyListeners();
+    }
+  }
+
+  /// Obtener mis publicaciones sin modificar el estado local (util para vistas)
+  Future<List<PublicacionModel>> fetchMisPublicaciones() async {
+    if (_currentUserId == null) return [];
+
+    try {
+      return await _repository.getMisPublicaciones(_currentUserId);
+    } catch (e) {
+      return [];
     }
   }
 
