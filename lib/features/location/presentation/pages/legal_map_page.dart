@@ -11,6 +11,7 @@ import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/widgets/responsive_widgets.dart';
 import '../../../../core/widgets/custom_snackbar.dart';
 import '../../../login/presentation/providers/login_notifier.dart';
+import '../widgets/widgets.dart';
 
 class LegalMapPage extends StatefulWidget {
   const LegalMapPage({super.key});
@@ -28,9 +29,10 @@ class _LegalMapPageState extends State<LegalMapPage> {
   Position? _currentPosition;
   List<LegalLocation> _nearbyLocations = [];
   AdvisoryResponse? _advisory;
+  TransitOfficesResponse? _transitOffices; // Nueva variable para oficinas de tránsito
   bool _isLoading = false;
   String? _errorMessage;
-  String _selectedState = 'Chiapas';
+  String _selectedState = 'Chiapas'; // Estado seleccionado para filtrar
   double _selectedRadius = 10.0;
   String _currentView = 'map';
 
@@ -277,10 +279,18 @@ class _LegalMapPageState extends State<LegalMapPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 20, color: colorScheme.primary),
           const SizedBox(width: 12),
-          Text(text, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 15)),
+          Expanded(
+            child: Text(
+              text, 
+              style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 15),
+              softWrap: true,
+              overflow: TextOverflow.visible,
+            ),
+          ),
         ],
       ),
     );
@@ -288,7 +298,6 @@ class _LegalMapPageState extends State<LegalMapPage> {
 
   Future<void> _getAdvisory() async {
     final loginNotifier = context.read<LoginNotifier>();
-    final userId = loginNotifier.currentUser?.id ?? 'demo-user-uuid';
 
     setState(() {
       _isLoading = true;
@@ -298,9 +307,17 @@ class _LegalMapPageState extends State<LegalMapPage> {
     });
 
     try {
-      final response = await _locationDataSource.getAdvisory(
-        userId: userId,
-        state: _selectedState,
+      // Crear despachos jurídicos de Chiapas
+      final despachosChiapas = _getDespachosJuridicosChiapas();
+      
+      final response = AdvisoryResponse(
+        plan: loginNotifier.currentUser?.isPro == true ? 'pro' : 'basico',
+        estado: 'Chiapas',
+        tema: 'Despachos Jurídicos',
+        mensaje: loginNotifier.currentUser?.isPro == true 
+          ? 'Encuentra los mejores despachos jurídicos en Chiapas'
+          : 'Actualiza a Pro para ver detalles completos de contacto',
+        oficinas: despachosChiapas,
       );
 
       setState(() {
@@ -313,7 +330,172 @@ class _LegalMapPageState extends State<LegalMapPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error al obtener asesoría: $e';
+        _errorMessage = 'Error al obtener despachos jurídicos: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<PublicOffice> _getDespachosJuridicosChiapas() {
+    return [
+      PublicOffice(
+        nombre: 'Bufete Jurídico García & Asociados',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Av. Central Poniente No. 374, Col. Centro',
+        ciudad: 'Tuxtla Gutiérrez',
+        estado: 'Chiapas',
+        telefono: '961 612 3456',
+        horario: 'Lunes a Viernes: 8:00 - 18:00',
+        latitud: 16.7516,
+        longitud: -93.1161,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Despacho Jurídico Morales',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Calle 1ra Norte Poniente No. 285, Centro',
+        ciudad: 'Tuxtla Gutiérrez',
+        estado: 'Chiapas',
+        telefono: '961 615 7890',
+        horario: 'Lunes a Viernes: 9:00 - 17:00',
+        latitud: 16.7540,
+        longitud: -93.1140,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Consultorio Jurídico López',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Av. 14 Sur No. 145, Col. Xamaipak',
+        ciudad: 'Tuxtla Gutiérrez',
+        estado: 'Chiapas',
+        telefono: '961 602 1234',
+        horario: 'Lunes a Sábado: 8:30 - 19:00',
+        latitud: 16.7300,
+        longitud: -93.1050,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Bufete Hernández & Partners',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Blvd. Belisario Domínguez No. 2055, Plan de Ayala',
+        ciudad: 'Tuxtla Gutiérrez',
+        estado: 'Chiapas',
+        telefono: '961 618 5678',
+        horario: 'Lunes a Viernes: 8:00 - 17:30',
+        latitud: 16.7450,
+        longitud: -93.0980,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Despacho Jurídico Ruiz Cortines',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Av. Insurgentes No. 890, Col. Revolución Mexicana',
+        ciudad: 'Tuxtla Gutiérrez',
+        estado: 'Chiapas',
+        telefono: '961 611 9876',
+        horario: 'Lunes a Viernes: 9:00 - 18:00',
+        latitud: 16.7380,
+        longitud: -93.1200,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Abogados Asociados San Cristóbal',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Calle Real de Guadalupe No. 34, Centro Histórico',
+        ciudad: 'San Cristóbal de Las Casas',
+        estado: 'Chiapas',
+        telefono: '967 678 1234',
+        horario: 'Lunes a Viernes: 8:00 - 16:00',
+        latitud: 16.7370,
+        longitud: -92.6376,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Bufete Jurídico Colonial',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Av. 16 de Septiembre No. 12, Centro',
+        ciudad: 'San Cristóbal de Las Casas',
+        estado: 'Chiapas',
+        telefono: '967 678 5678',
+        horario: 'Lunes a Sábado: 9:00 - 17:00',
+        latitud: 16.7360,
+        longitud: -92.6390,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Despacho Martínez & Asociados',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Calle 1ra de Mayo No. 567, Col. Francisco Sarabia',
+        ciudad: 'Tapachula',
+        estado: 'Chiapas',
+        telefono: '962 625 3456',
+        horario: 'Lunes a Viernes: 8:30 - 18:30',
+        latitud: 14.9067,
+        longitud: -92.2681,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Consultorio Jurídico Frontera Sur',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Av. Hidalgo No. 234, Centro',
+        ciudad: 'Tapachula',
+        estado: 'Chiapas',
+        telefono: '962 626 7890',
+        horario: 'Lunes a Viernes: 9:00 - 17:00, Sábados: 9:00 - 13:00',
+        latitud: 14.9080,
+        longitud: -92.2650,
+        esPublico: false,
+      ),
+      PublicOffice(
+        nombre: 'Bufete Jurídico Palenque',
+        tipo: 'Despacho Jurídico',
+        direccion: 'Av. Juárez No. 89, Centro',
+        ciudad: 'Palenque',
+        estado: 'Chiapas',
+        telefono: '916 345 1234',
+        horario: 'Lunes a Viernes: 8:00 - 17:00',
+        latitud: 17.5089,
+        longitud: -91.9820,
+        esPublico: false,
+      ),
+    ];
+  }
+
+  // Nuevo método para buscar oficinas de tránsito
+  Future<void> _getTransitOffices() async {
+    if (_currentPosition == null) {
+      LexiaAlert.warning(context, title: 'Espera', message: 'Obteniendo tu ubicación...');
+      await _getCurrentLocation();
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _nearbyLocations = [];
+      _advisory = null; // Limpiar asesoría previa
+      _markers.clear();
+    });
+
+    try {
+      final response = await _locationDataSource.getTransitOffices(
+        latitude: _currentPosition!.latitude,
+        longitude: _currentPosition!.longitude,
+        city: 'Tuxtla Gutiérrez',
+        state: 'Chiapas',
+      );
+
+      setState(() {
+        _transitOffices = response;
+        _isLoading = false;
+      });
+
+      if (response.oficinas.isNotEmpty) {
+        _updateTransitOfficesMarkers(response.oficinas);
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error al obtener oficinas de tránsito: $e';
         _isLoading = false;
       });
     }
@@ -361,6 +543,76 @@ class _LegalMapPageState extends State<LegalMapPage> {
         _mapController != null) {
       _mapController!.move(
         LatLng(firstOfficeWithCoords.latitud!, firstOfficeWithCoords.longitud!),
+        12.0,
+      );
+    }
+
+    setState(() {});
+  }
+
+  // Método para actualizar marcadores de oficinas de tránsito
+  void _updateTransitOfficesMarkers(List<TransitOffice> offices) {
+    _markers.clear();
+
+    for (var office in offices) {
+      _markers.add(
+        Marker(
+          point: LatLng(office.latitud, office.longitud),
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => _showTransitOfficeDetails(office),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.traffic, color: Colors.white, size: 22),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Si existe ubicación actual, agregar marcador del usuario
+    if (_currentPosition != null) {
+      _markers.add(
+        Marker(
+          point: LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => _showMyLocationDialog(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.my_location, color: Colors.white, size: 24),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Centrar mapa en la primera oficina
+    if (offices.isNotEmpty && _mapController != null) {
+      _mapController!.move(
+        LatLng(offices.first.latitud, offices.first.longitud),
         12.0,
       );
     }
@@ -420,14 +672,24 @@ class _LegalMapPageState extends State<LegalMapPage> {
     );
   }
 
+  // Método para mostrar detalles de oficinas de tránsito
+  void _showTransitOfficeDetails(TransitOffice office) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => TransitOfficeDetailsDialog(office: office),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final size = MediaQuery.of(context).size;
-    
-    final isWide = size.width > 600;
-    final cardPadding = isWide ? 20.0 : 16.0;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -469,117 +731,14 @@ class _LegalMapPageState extends State<LegalMapPage> {
       ),
       body: Column(
         children: [
-          // Panel de filtros
+          // Panel de búsqueda
           Padding(
             padding: EdgeInsets.all(ResponsiveSize.horizontalPadding(context)),
-            child: ResponsiveCard(
-              padding: EdgeInsets.all(cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Buscar oficinas legales',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Selector de estado
-                  DropdownButtonFormField<String>(
-                    value: _selectedState,
-                    dropdownColor: colorScheme.surfaceContainerHighest,
-                    style: TextStyle(color: colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      labelText: 'Estado',
-                      labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                      prefixIcon: Icon(Icons.location_city, color: colorScheme.primary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colorScheme.primary, width: 2),
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surface,
-                    ),
-                    items: ['Chiapas', 'Ciudad de México', 'Jalisco', 'Nuevo León']
-                        .map((e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(e, style: TextStyle(color: colorScheme.onSurface)),
-                            ))
-                        .toList(),
-                    onChanged: (value) => setState(() => _selectedState = value!),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Slider de radio
-                  Row(
-                    children: [
-                      Icon(Icons.radar, color: colorScheme.primary, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Radio:', style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
-                      Expanded(
-                        child: Slider(
-                          value: _selectedRadius,
-                          min: 1,
-                          max: 50,
-                          divisions: 49,
-                          label: '${_selectedRadius.toInt()} km',
-                          activeColor: colorScheme.primary,
-                          onChanged: (value) => setState(() => _selectedRadius = value),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${_selectedRadius.toInt()} km',
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Botones
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ResponsiveButton(
-                          text: 'Buscar cercanas',
-                          icon: Icon(Icons.search, color: colorScheme.onPrimary, size: 20),
-                          isLoading: _isLoading,
-                          onPressed: _searchNearbyLocations,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ResponsiveButton(
-                          text: 'Asesoría',
-                          icon: Icon(Icons.help_outline, color: colorScheme.primary, size: 20),
-                          isOutlined: true,
-                          isLoading: _isLoading,
-                          onPressed: _getAdvisory,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            child: SearchButtonsWidget(
+              isLoading: _isLoading,
+              onSearchNearby: _searchNearbyLocations,
+              onGetAdvisory: _getAdvisory,
+              onGetTransitOffices: _getTransitOffices,
             ),
           ),
           
@@ -656,101 +815,53 @@ class _LegalMapPageState extends State<LegalMapPage> {
   }
 
   Widget _buildMapView() {
-    final initialPosition = _currentPosition != null
-        ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-        : LatLng(19.4326, -99.1332);
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: FlutterMap(
-        mapController: _mapController ??= MapController(),
-        options: MapOptions(
-          initialCenter: initialPosition,
-          initialZoom: 14.0,
-          minZoom: 5.0,
-          maxZoom: 18.0,
-          onMapReady: () {
-            if (_currentPosition != null) {
-              _mapController?.move(
-                LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-                14.0,
-              );
-            }
-          },
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.example.flutter_application_1',
-            maxZoom: 19,
-          ),
-          MarkerLayer(markers: _markers),
-        ],
-      ),
+    return MapWidget(
+      mapController: _mapController ??= MapController(),
+      currentPosition: _currentPosition,
+      markers: _markers,
     );
   }
 
   Widget _buildListView() {
     final colorScheme = Theme.of(context).colorScheme;
     
+    // Si hay oficinas de tránsito, mostrar esas
+    if (_transitOffices != null && _transitOffices!.oficinas.isNotEmpty) {
+      return ListView.builder(
+        padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.horizontalPadding(context)),
+        itemCount: _transitOffices!.oficinas.length,
+        itemBuilder: (context, index) {
+          final office = _transitOffices!.oficinas[index];
+          return TransitOfficeCard(
+            office: office,
+            onTap: () => _showTransitOfficeDetails(office),
+          );
+        },
+      );
+    }
+    
+    // Si hay ubicaciones legales normales, mostrar esas
     if (_nearbyLocations.isNotEmpty) {
       return ListView.builder(
         padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.horizontalPadding(context)),
         itemCount: _nearbyLocations.length,
         itemBuilder: (context, index) {
           final location = _nearbyLocations[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: ResponsiveCard(
-              padding: const EdgeInsets.all(16),
-              child: InkWell(
-                onTap: () {
-                  setState(() => _currentView = 'map');
-                  _mapController?.move(LatLng(location.latitud, location.longitud), 16.0);
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.location_on, color: colorScheme.primary),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            location.nombre,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${location.tipo} • ${location.distanciaKm?.toStringAsFixed(1)} km',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-                  ],
-                ),
-              ),
-            ),
+          return LegalLocationCard(
+            location: location,
+            mapController: _mapController,
+            onViewChange: () => setState(() => _currentView = 'map'),
           );
         },
       );
     }
 
     if (_advisory != null) {
-      return _buildAdvisoryView();
+      return AdvisoryViewWidget(
+        advisory: _advisory!,
+        mapController: _mapController,
+        onViewChange: () => setState(() => _currentView = 'map'),
+      );
     }
 
     return Padding(
@@ -788,127 +899,5 @@ class _LegalMapPageState extends State<LegalMapPage> {
         ),
       ),
     );
-  }
-
-  Widget _buildAdvisoryView() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final loginNotifier = context.read<LoginNotifier>();
-    final isPro = loginNotifier.currentUser?.isPro ?? false;
-
-    if (!isPro) {
-      return Padding(
-        padding: EdgeInsets.all(ResponsiveSize.horizontalPadding(context)),
-        child: ResponsiveCard(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.lock_outline, size: 48, color: Colors.orange),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                _advisory!.mensaje,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurface, fontSize: 16),
-              ),
-              const SizedBox(height: 24),
-              ResponsiveButton(
-                text: 'Actualizar a Pro',
-                onPressed: () {},
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_advisory!.oficinas.isEmpty) {
-      return Center(
-        child: Text(
-          'No se encontraron oficinas para este estado',
-          style: TextStyle(color: colorScheme.onSurfaceVariant),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: ResponsiveSize.horizontalPadding(context)),
-      itemCount: _advisory!.oficinas.length,
-      itemBuilder: (context, index) {
-        final office = _advisory!.oficinas[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: ResponsiveCard(
-            padding: const EdgeInsets.all(16),
-            child: InkWell(
-              onTap: () {
-                if (office.latitud != null && office.longitud != null) {
-                  setState(() => _currentView = 'map');
-                  _mapController?.move(LatLng(office.latitud!, office.longitud!), 16.0);
-                }
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.account_balance, color: Colors.green),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          office.nombre,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        if (office.direccion != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            '📍 ${office.direccion}',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                          ),
-                        ],
-                        if (office.telefono != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '📞 ${office.telefono}',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                          ),
-                        ],
-                        if (office.horario != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            '🕐 ${office.horario}',
-                            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+}
 }

@@ -35,4 +35,10 @@ class AppRoutes {
   // Rutas de verificación profesional
   static const String lawyerVerification = 'lawyer-verification';
   static const String businessRegistration = 'business-registration';
+
+  // Rutas de administración
+  static const String admin = 'admin';
+  static const String moderation = 'moderation';
+  static const String profileValidation = 'profile-validation';
+  static const String userManagement = 'user-management';
 }

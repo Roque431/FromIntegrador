@@ -15,6 +15,10 @@ import 'package:flutter_application_1/features/profile/presentation/pages/lawyer
 import 'package:flutter_application_1/features/business/presentation/pages/business_registration_page.dart';
 import 'package:flutter_application_1/features/chat/presentation/pages/conversaciones_page.dart';
 import 'package:flutter_application_1/features/chat/presentation/pages/chat_privado_page.dart';
+import 'package:flutter_application_1/features/admin/presentation/pages/admin_dashboard_page.dart';
+import 'package:flutter_application_1/features/admin/presentation/pages/profile_validation_page.dart';
+import 'package:flutter_application_1/features/moderation/presentation/pages/moderation_page.dart';
+import 'package:flutter_application_1/features/user_management/presentation/pages/user_management_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../application/app_state.dart';
@@ -37,7 +41,7 @@ class AppRouter {
   late final router = GoRouter(
     refreshListenable: appState,
     
-    // Cambiar a login como inicial para que el redirect funcione
+    // Iniciar en login para autenticación
     initialLocation: '/login',
     
     routes: [
@@ -185,23 +189,66 @@ class AppRouter {
         path: '/business-registration',
         builder: (context, state) => const BusinessRegistrationPage(),
       ),
+      
+      // Rutas de administración
+      GoRoute(
+        name: AppRoutes.admin,
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.moderation,
+        path: '/moderation',
+        builder: (context, state) => const ModerationPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.profileValidation,
+        path: '/profile-validation',
+        builder: (context, state) => const ProfileValidationPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.userManagement,
+        path: '/user-management',
+        builder: (context, state) => const UserManagementPage(),
+      ),
     ],
     
-    // Habilitar redirect para manejar autenticación
+    // Redirect para manejar autenticación y rutas protegidas
     redirect: (context, state) {
       final isGoingToLogin = state.matchedLocation == '/login';
       final isGoingToRegister = state.matchedLocation == '/register';
       final isGoingToVerifyEmail = state.matchedLocation.startsWith('/verify-email');
+      final isGoingToLegalMap = state.matchedLocation == '/legal-map';
+      
+      // Rutas de administración - PROTEGIDAS
+      final isGoingToAdmin = state.matchedLocation.startsWith('/admin');
+      final isGoingToModeration = state.matchedLocation.startsWith('/moderation');
+      final isGoingToProfileValidation = state.matchedLocation.startsWith('/profile-validation');
+      final isGoingToUserManagement = state.matchedLocation.startsWith('/user-management');
 
+      // Si aún estamos verificando el estado de autenticación, no redirigir
       if (appState.authStatus == AuthStatus.checking) return null;
 
+      // Permitir acceso al mapa legal (público) sin autenticación
+      if (isGoingToLegalMap) return null;
+
+      // PROTEGER rutas de admin - requieren autenticación Y ser admin
+      if (isGoingToAdmin || isGoingToModeration || isGoingToProfileValidation || isGoingToUserManagement) {
+        if (!appState.isAuthenticated) {
+          return '/login';
+        }
+        // Aquí puedes agregar validación de rol de admin si tienes esa funcionalidad
+        // Por ahora permitimos el acceso si está autenticado
+        return null;
+      }
+
+      // Si no está autenticado y no va a páginas públicas, redirigir a login
       if (!appState.isAuthenticated && !isGoingToLogin && !isGoingToRegister && !isGoingToVerifyEmail) {
         return '/login';
       }
 
-      // Redirigir según tipo de usuario al hacer login
+      // Si está autenticado y va a login, redirigir según tipo de usuario
       if (appState.isAuthenticated && isGoingToLogin) {
-        // Obtener el LoginNotifier para saber el tipo de usuario
         final loginNotifier = context.read<LoginNotifier>();
         final user = loginNotifier.currentUser;
 

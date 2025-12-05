@@ -16,6 +16,10 @@ import 'features/history/presentation/providers/historial_notifier.dart';
 import 'features/history/data/repository/historial_repository.dart';
 import 'features/chat/presentation/providers/chat_privado_notifier.dart';
 import 'features/chat/data/repository/chat_privado_repository.dart';
+import 'features/admin/presentation/providers/simple_admin_notifier.dart';
+import 'features/admin/presentation/providers/simple_profile_validation_notifier.dart';
+import 'features/moderation/presentation/providers/simple_moderation_notifier.dart';
+import 'features/user_management/presentation/providers/simple_user_management_notifier.dart';
 import 'myapp.dart';
 
 Future<void> main() async {
@@ -106,6 +110,18 @@ Future<void> main() async {
             );
           },
         ),
+
+        // Admin - Versión simplificada para testing
+        ChangeNotifierProvider(create: (_) => SimpleAdminNotifier()),
+
+        // Profile Validation - Versión simplificada para testing
+        ChangeNotifierProvider(create: (_) => SimpleProfileValidationNotifier()),
+
+        // Moderation - Versión simplificada para testing
+        ChangeNotifierProvider(create: (_) => SimpleModerationNotifier()),
+
+        // User Management - Versión simplificada para testing
+        ChangeNotifierProvider(create: (_) => SimpleUserManagementNotifier()),
       ],
       child: const MyApp(),
     ),
