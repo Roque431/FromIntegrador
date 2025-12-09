@@ -1,62 +1,26 @@
 import 'package:flutter/material.dart';
+import '../../data/datasources/admin_datasource.dart';
 
 class SimpleAdminNotifier extends ChangeNotifier {
+  final AdminDataSource adminDataSource;
+  
+  SimpleAdminNotifier({required this.adminDataSource});
+  
   bool _isLoading = false;
   String? _errorMessage;
   
-  // Estados simulados para testing
-  final Map<String, dynamic> _stats = {
-    'totalUsers': 1250,
-    'totalLawyers': 85,
-    'totalConsultations': 2340,
-    'pendingValidations': 12,
-    'monthlyRevenue': 15750.50,
-    'activeUsers': 892,
+  // Datos reales desde la API
+  Map<String, dynamic> _stats = {
+    'totalUsers': 0,
+    'totalLawyers': 0,
+    'totalConsultations': 0,
+    'pendingValidations': 0,
+    'monthlyRevenue': 0.0,
+    'activeUsers': 0,
   };
 
-  final List<Map<String, dynamic>> _pendingProfiles = [
-    {
-      'id': '1',
-      'name': 'Dr. Juan Pérez García',
-      'email': 'juan.perez@email.com',
-      'cedula': '12345678',
-      'especialidad': 'Derecho Civil',
-      'experiencia': '5 años',
-      'status': 'pending',
-      'submittedAt': '2024-12-03 10:30:00',
-    },
-    {
-      'id': '2', 
-      'name': 'Lic. María González López',
-      'email': 'maria.gonzalez@email.com',
-      'cedula': '87654321',
-      'especialidad': 'Derecho Penal',
-      'experiencia': '8 años',
-      'status': 'pending',
-      'submittedAt': '2024-12-03 14:15:00',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _pendingReports = [
-    {
-      'id': '1',
-      'type': 'inappropriate_content',
-      'reportedBy': 'usuario123',
-      'targetUser': 'abogado456',
-      'description': 'Contenido inapropiado en comentario',
-      'status': 'pending',
-      'reportedAt': '2024-12-03 09:45:00',
-    },
-    {
-      'id': '2',
-      'type': 'spam',
-      'reportedBy': 'cliente789',
-      'targetUser': 'consultor101',
-      'description': 'Envío masivo de mensajes no solicitados',
-      'status': 'pending',
-      'reportedAt': '2024-12-03 16:20:00',
-    },
-  ];
+  List<Map<String, dynamic>> _pendingProfiles = [];
+  List<Map<String, dynamic>> _pendingReports = [];
 
   // Getters
   bool get isLoading => _isLoading;
@@ -65,39 +29,81 @@ class SimpleAdminNotifier extends ChangeNotifier {
   List<Map<String, dynamic>> get pendingProfiles => _pendingProfiles;
   List<Map<String, dynamic>> get pendingReports => _pendingReports;
 
-  // Métodos simulados
+  // Cargar estadísticas desde la API
   Future<void> loadAdminStats() async {
     _setLoading(true);
     
-    // Simular carga de datos
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Cargar estadísticas
+      final statsModel = await adminDataSource.getAdminStats();
+      
+      _stats = {
+        'totalUsers': statsModel.usuariosActivos,
+        'totalLawyers': statsModel.abogadosVerificados,
+        'totalConsultations': statsModel.consultasDelMes,
+        'pendingValidations': _pendingProfiles.length,
+        'activeUsers': statsModel.usuariosActivos,
+        'crecimientoUsuarios': statsModel.crecimientoUsuarios,
+        'crecimientoAbogados': statsModel.crecimientoAbogados,
+      };
+      
+      // Cargar perfiles pendientes
+      _pendingProfiles = await adminDataSource.getPendingProfiles();
+      
+      // Cargar reportes pendientes
+      _pendingReports = await adminDataSource.getPendingReports();
+      
+      _setError(null);
+    } catch (e) {
+      _setError(e.toString());
+      print('Error al cargar estadísticas de admin: $e');
+    } finally {
+      _setLoading(false);
+    }
     
-    _setLoading(false);
-    _setError(null);
     notifyListeners();
   }
 
   Future<void> validateProfile(String profileId, bool approve) async {
     _setLoading(true);
     
-    // Simular validación
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      final success = await adminDataSource.validateProfile(profileId, approve);
+      
+      if (success) {
+        // Remover de la lista de pendientes
+        _pendingProfiles.removeWhere((profile) => profile['id'] == profileId);
+        _setError(null);
+      } else {
+        _setError('No se pudo validar el perfil');
+      }
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
     
-    // Remover de la lista de pendientes
-    _pendingProfiles.removeWhere((profile) => profile['id'] == profileId);
-    
-    _setLoading(false);
     notifyListeners();
   }
 
   Future<void> moderateReport(String reportId, String action) async {
     _setLoading(true);
     
-    // Simular moderación
-    await Future.delayed(const Duration(milliseconds: 600));
-    
-    // Remover de la lista de pendientes
-    _pendingReports.removeWhere((report) => report['id'] == reportId);
+    try {
+      final success = await adminDataSource.moderateContent(reportId, action);
+      
+      if (success) {
+        // Remover de la lista de pendientes
+        _pendingReports.removeWhere((report) => report['id'] == reportId);
+        _setError(null);
+      } else {
+        _setError('No se pudo moderar el reporte');
+      }
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
     
     _setLoading(false);
     notifyListeners();

@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 import '../../../../core/network/api_client.dart';
-import '../../../login/domain/repository/login_repository.dart'; // NUEVO
+import '../../../../core/network/api_endpoints.dart';
+import '../../../login/domain/repository/login_repository.dart';
+import '../../../forum/data/repository/foro_repository.dart';
 import '../../domain/entities/consultation.dart';
 import '../../domain/usecase/send_message_usecase.dart';
 import '../../domain/usecase/get_chat_history_usecase.dart';
+import '../../data/models/chat_session_model.dart';
 
 enum HomeState { initial, loading, success, error, quotaExceeded }
 
 class HomeNotifier extends ChangeNotifier {
   final SendMessageUseCase sendMessageUseCase;
   final GetChatHistoryUseCase getChatHistoryUseCase;
-  final LoginRepository loginRepository; // Para obtener token y userId
+  final LoginRepository loginRepository;
+  final ApiClient apiClient;
+  final ForoRepository foroRepository;
 
   HomeNotifier({
     required this.sendMessageUseCase,
     required this.getChatHistoryUseCase,
     required this.loginRepository,
+    required this.apiClient,
+    required this.foroRepository,
   }) {
-    _loadSessionIdAndUser(); // ¡Cambiado el nombre para reflejar la carga de ambos!
+    _loadSessionIdAndUser();
   }
 
   // Estado
@@ -238,5 +245,196 @@ class HomeNotifier extends ChangeNotifier {
     _errorMessage = null;
     // El LoginRepository ya limpia el token en su método logout, no es necesario limpiar aquí.
     notifyListeners();
+  }
+
+  // ====================================================================
+  // NUEVAS FUNCIONALIDADES: Gestión de Sesiones y Compartir al Foro
+  // ====================================================================
+
+  /// Crear nueva conversación (limpia la sesión actual)
+  void startNewConversation() {
+    _sessionId = null;
+    _consultations = [];
+    _currentConsultation = null;
+    _currentResponse = null;
+    _errorMessage = null;
+    _quotaLimitInfo = null;
+    _state = HomeState.initial;
+    notifyListeners();
+  }
+
+  /// Obtener todas las sesiones del usuario
+  Future<List<ChatSessionModel>> getChatSessions() async {
+    try {
+      if (_userId == null) {
+        print('🔴 HomeNotifier - No hay userId para obtener sesiones');
+        return [];
+      }
+
+      final response = await apiClient.get(
+        '${ApiEndpoints.chat}/user/$_userId/sessions',
+        queryParameters: {'limit': '20'},
+      );
+
+      if (response['success'] == true && response['sesiones'] != null) {
+        final List<dynamic> data = response['sesiones'];
+        return data.map((json) => ChatSessionModel.fromJson(json)).toList();
+      }
+
+      return [];
+    } catch (e) {
+      print('🔴 Error obteniendo sesiones: $e');
+      return [];
+    }
+  }
+
+  /// Cargar una sesión existente con su historial
+  Future<void> loadSession(String sessionId) async {
+    try {
+      _state = HomeState.loading;
+      _sessionId = sessionId;
+      _errorMessage = null;
+      notifyListeners();
+
+      // Obtener historial de la sesión
+      final response = await apiClient.get(
+        '${ApiEndpoints.chat}/session/$sessionId/history',
+      );
+
+      if (response['success'] == true && response['mensajes'] != null) {
+        final List<dynamic> messages = response['mensajes'];
+
+        // Convertir mensajes a consultations
+        _consultations = _convertMessagesToConsultations(messages);
+
+        _state = HomeState.success;
+        notifyListeners();
+      } else {
+        throw Exception('No se pudo cargar el historial de la sesión');
+      }
+    } catch (e) {
+      _errorMessage = 'Error al cargar la sesión: ${e.toString()}';
+      _state = HomeState.error;
+      notifyListeners();
+    }
+  }
+
+  /// Convertir mensajes de API a Consultations
+  List<Consultation> _convertMessagesToConsultations(List<dynamic> messages) {
+    final List<Consultation> consultations = [];
+
+    for (int i = 0; i < messages.length; i++) {
+      final message = messages[i];
+
+      // Solo procesar mensajes del usuario
+      if (message['rol'] == 'user') {
+        final userMessage = message['mensaje'] as String;
+
+        // Buscar la respuesta del asistente siguiente
+        String assistantResponse = '';
+        if (i + 1 < messages.length && messages[i + 1]['rol'] == 'assistant') {
+          assistantResponse = messages[i + 1]['mensaje'] as String;
+        }
+
+        // Crear consultation
+        consultations.add(
+          Consultation(
+            id: message['id'] ?? '${DateTime.now().millisecondsSinceEpoch}_$i',
+            userId: _userId ?? '',
+            query: userMessage,
+            response: assistantResponse,
+            sessionId: message['sesion_id'] ?? message['sesionId'] ?? _sessionId ?? '',
+            createdAt: DateTime.parse(message['fecha'] ?? DateTime.now().toIso8601String()),
+            status: 'completed',
+          ),
+        );
+      }
+    }
+
+    return consultations;
+  }
+
+  /// Eliminar una sesión completamente
+  Future<bool> deleteSession(String sessionId) async {
+    try {
+      await apiClient.delete('${ApiEndpoints.chat}/session/$sessionId');
+
+      // Si es la sesión actual, limpiarla
+      if (_sessionId == sessionId) {
+        startNewConversation();
+      }
+
+      return true;
+    } catch (e) {
+      print('🔴 Error eliminando sesión: $e');
+      _errorMessage = 'Error al eliminar la sesión';
+      return false;
+    }
+  }
+
+  /// Compartir la conversación actual al foro
+  Future<bool> compartirConversacionAlForo({
+    required String categoriaId,
+    String? titulo,
+  }) async {
+    try {
+      if (_sessionId == null || _userId == null) {
+        throw Exception('No hay conversación activa para compartir');
+      }
+
+      if (_consultations.isEmpty) {
+        throw Exception('No hay mensajes en la conversación para compartir');
+      }
+
+      await foroRepository.compartirConversacion(
+        usuarioId: _userId!,
+        sessionId: _sessionId!,
+        categoriaId: categoriaId,
+        titulo: titulo,
+      );
+
+      return true;
+    } catch (e) {
+      print('🔴 Error compartiendo conversación: $e');
+      _errorMessage = e.toString();
+      return false;
+    }
+  }
+
+  /// Registrar preferencia de profesionista (Me interesa / No me interesa)
+  Future<bool> registrarPreferenciaProfesionista({
+    required String profesionistaId,
+    required String profesionistaNombre,
+    required String tipoInteraccion, // 'me_interesa', 'no_interesa', 'contacto'
+    String? cluster,
+  }) async {
+    try {
+      if (_userId == null) {
+        print('🔴 HomeNotifier - No hay userId para registrar preferencia');
+        return false;
+      }
+
+      final response = await apiClient.post(
+        ApiEndpoints.profesionistasPreferencia,
+        body: {
+          'usuarioId': _userId!,
+          'profesionistaId': profesionistaId,
+          'profesionistaNombre': profesionistaNombre,
+          'tipoInteraccion': tipoInteraccion,
+          if (cluster != null) 'cluster': cluster,
+        },
+      );
+
+      if (response['success'] == true) {
+        final emoji = tipoInteraccion == 'me_interesa' ? '👍' : tipoInteraccion == 'no_interesa' ? '👎' : '📞';
+        print('$emoji Preferencia registrada: $profesionistaNombre ($tipoInteraccion)');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      print('🔴 Error registrando preferencia: $e');
+      return false;
+    }
   }
 }

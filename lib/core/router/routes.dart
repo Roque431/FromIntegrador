@@ -11,6 +11,9 @@ class AppRoutes {
   // Rutas de features
   static const String profile = 'profile';
   static const String editProfile = 'edit-profile';
+  static const String aboutApp = 'about';
+  static const String helpCenter = 'help-center';
+  static const String passwordRecovery = 'password-recovery';
   static const String subscription = 'subscription';
   static const String history = 'history';
   static const String consultationDetail = 'consultation-detail';

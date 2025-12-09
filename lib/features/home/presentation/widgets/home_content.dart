@@ -6,10 +6,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/home_notifier.dart';
 import '../../../login/presentation/providers/login_notifier.dart';
 import '../../../chat/presentation/providers/chat_privado_notifier.dart';
+import '../../../forum/presentation/providers/foro_notifier.dart';
 import '../../domain/entities/consultation.dart';
 import '../../data/models/profesionista_model.dart';
 import '../../data/models/anunciante_model.dart';
-import 'question_chip.dart';
 import 'consultation_input.dart';
 import 'profesionista_card.dart';
 import 'anunciante_card.dart';
@@ -75,14 +75,22 @@ class _HomeContentState extends State<HomeContent> {
                 onPressed: widget.onMenuPressed,
               ),
               const Spacer(),
-              if (homeNotifier.consultations.isNotEmpty)
+              if (homeNotifier.consultations.isNotEmpty) ...[
+                // Botón compartir al foro
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  onPressed: () => _showCompartirDialog(context, homeNotifier),
+                  tooltip: 'Compartir al foro',
+                ),
+                // Botón nueva conversación
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () {
-                    homeNotifier.clearSession();
+                    _confirmarNuevaConversacion(context, homeNotifier);
                   },
                   tooltip: 'Nueva conversación',
                 ),
+              ],
             ],
           ),
         ),
@@ -224,39 +232,27 @@ class _HomeContentState extends State<HomeContent> {
               ),
               SizedBox(height: isWeb ? 32 : 24),
 
-              // Subtítulo
-              Text(
-                '¿Sobre qué necesitas ayuda?',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: isWeb ? 28 : null,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: isWeb ? 40 : 32),
-
-              // Preguntas sugeridas
-              Wrap(
-                spacing: isWeb ? 16 : 12,
-                runSpacing: isWeb ? 16 : 12,
-                alignment: WrapAlignment.center,
-                children: const [
-                  QuestionChip(
-                    question: 'Me despidieron y no me dieron mi liquidación.',
-                  ),
-                  QuestionChip(
-                    question: '¿Cuántos días de vacaciones me corresponden por ley?',
-                  ),
-                  QuestionChip(
-                    question: '¿Qué hago si sufro acoso laboral?',
-                  ),
-                  QuestionChip(
-                    question: '¿Cuáles son los pasos para divorciarme?',
-                  ),
-                  QuestionChip(
-                    question: '¿Qué debo hacer si me detienen sin motivo?',
-                  ),
-                ],
+              // Slogan
+              ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary,
+                    Theme.of(context).colorScheme.secondary,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: Text(
+                  'El Derecho al alcance de tus manos',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontSize: isWeb ? 32 : 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        height: 1.3,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
               ),
               SizedBox(height: isWeb ? 40 : 24),
             ],
@@ -348,14 +344,16 @@ class _HomeContentState extends State<HomeContent> {
     HomeNotifier notifier,
   ) {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
     
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.90,
+          maxWidth: isMobile ? MediaQuery.of(context).size.width * 0.95 : MediaQuery.of(context).size.width * 0.90,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isMobile ? 12 : 16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.only(
@@ -374,20 +372,21 @@ class _HomeContentState extends State<HomeContent> {
               children: [
                 Icon(
                   Icons.account_balance,
-                  size: 18,
+                  size: isMobile ? 16 : 18,
                   color: theme.colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Respuesta de LexIA',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: theme.colorScheme.primary,
+                Expanded(
+                  child: Text(
+                    'Respuesta de LexIA',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 12 : 14,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
                 if (consultation.cluster != null) ...[
-                  const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
@@ -397,7 +396,7 @@ class _HomeContentState extends State<HomeContent> {
                     child: Text(
                       consultation.cluster!,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9,
                         color: theme.colorScheme.onPrimaryContainer,
                       ),
                     ),
@@ -407,16 +406,21 @@ class _HomeContentState extends State<HomeContent> {
             ),
             const SizedBox(height: 12),
             
-            // Texto de respuesta en Markdown
-            MarkdownBody(
-              data: consultation.response,
-              styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(fontSize: 14, height: 1.6),
-                h1: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                h2: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                h3: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                strong: const TextStyle(fontWeight: FontWeight.bold),
-                listBullet: const TextStyle(fontSize: 14),
+            // Texto de respuesta en Markdown (filtrado si hay profesionistas)
+            SingleChildScrollView(
+              child: MarkdownBody(
+                data: _filtrarTextoRespuesta(consultation),
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    fontSize: isMobile ? 13 : 14,
+                    height: 1.6,
+                  ),
+                  h1: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  h2: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  h3: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  strong: const TextStyle(fontWeight: FontWeight.bold),
+                  listBullet: TextStyle(fontSize: isMobile ? 13 : 14),
+                ),
               ),
             ),
             
@@ -432,14 +436,25 @@ class _HomeContentState extends State<HomeContent> {
                 onMatch: (p) {
                   _handleMatchProfesionista(context, p);
                 },
-                onRechazar: (p) {
-                  // Simplemente no hacer nada o mostrar feedback
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Entendido, no te mostraremos a ${p.nombre}'),
-                      duration: const Duration(seconds: 2),
-                    ),
+                onRechazar: (p) async {
+                  // Registrar preferencia en el backend
+                  final notifier = context.read<HomeNotifier>();
+                  final success = await notifier.registrarPreferenciaProfesionista(
+                    profesionistaId: p.id,
+                    profesionistaNombre: p.nombre,
+                    tipoInteraccion: 'no_interesa',
+                    cluster: consultation.cluster,
                   );
+
+                  if (success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Entendido, no te mostraremos a ${p.nombre} en el futuro'),
+                        duration: const Duration(seconds: 2),
+                        backgroundColor: Colors.green.shade600,
+                      ),
+                    );
+                  }
                 },
               ),
             ],
@@ -470,14 +485,6 @@ class _HomeContentState extends State<HomeContent> {
                 sugerencias: consultation.sugerencias,
                 onSugerenciaTap: (sugerencia) {
                   notifier.sendMessage(sugerencia);
-                },
-              ),
-            
-            // Invitación al foro (si aplica)
-            if (consultation.ofrecerForo)
-              ForoInvitationBanner(
-                onIrAlForo: () {
-                  context.push('/forum');
                 },
               ),
           ],
@@ -631,8 +638,9 @@ class _HomeContentState extends State<HomeContent> {
     // Obtener el userId del usuario actual
     final loginNotifier = context.read<LoginNotifier>();
     final chatNotifier = context.read<ChatPrivadoNotifier>();
+    final homeNotifier = context.read<HomeNotifier>();
     final userId = loginNotifier.currentUserId;
-    
+
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -642,7 +650,16 @@ class _HomeContentState extends State<HomeContent> {
       );
       return;
     }
-    
+
+    // Registrar preferencia "me_interesa" en el backend
+    final consultation = homeNotifier.currentConsultation;
+    await homeNotifier.registrarPreferenciaProfesionista(
+      profesionistaId: profesionista.id,
+      profesionistaNombre: profesionista.nombre,
+      tipoInteraccion: 'me_interesa',
+      cluster: consultation?.cluster,
+    );
+
     // Mostrar loading
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -660,15 +677,15 @@ class _HomeContentState extends State<HomeContent> {
         duration: Duration(seconds: 3),
       ),
     );
-    
+
     // Crear la conversación
     final conversacion = await chatNotifier.iniciarConversacion(
       abogadoId: profesionista.id,
       mensajeInicial: '¡Hola! Me gustaría consultar sobre mi caso.',
     );
-    
+
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    
+
     if (conversacion != null) {
       // Navegar directamente al chat
       context.push('/chat/${conversacion.ciudadanoId}/${conversacion.abogadoId}');
@@ -837,5 +854,242 @@ class _HomeContentState extends State<HomeContent> {
         ),
       ),
     );
+  }
+
+  // ====================================================================
+  // NUEVAS FUNCIONALIDADES: Compartir al Foro y Nueva Conversación
+  // ====================================================================
+
+  void _confirmarNuevaConversacion(BuildContext context, HomeNotifier notifier) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nueva Conversación'),
+        content: const Text('¿Deseas iniciar una nueva conversación? La conversación actual se guardará en tu historial.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              notifier.startNewConversation();
+            },
+            child: const Text('Nueva Conversación'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCompartirDialog(BuildContext context, HomeNotifier notifier) {
+    final tituloController = TextEditingController();
+    String? selectedCategoryId;
+
+    // Obtener categorías del foro
+    final foroNotifier = context.read<ForoNotifier>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.share, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              const Text('Compartir al Foro'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '¿Deseas compartir esta conversación al foro para ayudar a otros usuarios?',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+
+                // Selector de categoría
+                const Text('Categoría:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  value: selectedCategoryId,
+                  decoration: InputDecoration(
+                    hintText: 'Selecciona una categoría',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  items: foroNotifier.categorias.map((cat) {
+                    return DropdownMenuItem(
+                      value: cat.id,
+                      child: Text(cat.nombre),
+                    );
+                  }).toList(),
+                  onChanged: (value) => setDialogState(() => selectedCategoryId = value),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Campo de título opcional
+                const Text('Título (opcional):', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: tituloController,
+                  decoration: InputDecoration(
+                    hintText: 'Se generará automáticamente si se deja vacío',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  maxLines: 2,
+                ),
+
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Tu conversación será visible para toda la comunidad',
+                          style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: selectedCategoryId == null
+                  ? null
+                  : () async {
+                      Navigator.pop(ctx);
+
+                      // Mostrar loading
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              ),
+                              SizedBox(width: 12),
+                              Text('Compartiendo conversación...'),
+                            ],
+                          ),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+
+                      final success = await notifier.compartirConversacionAlForo(
+                        categoriaId: selectedCategoryId!,
+                        titulo: tituloController.text.trim().isEmpty
+                            ? null
+                            : tituloController.text.trim(),
+                      );
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.white),
+                                  SizedBox(width: 12),
+                                  Text('Conversación compartida exitosamente'),
+                                ],
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          // Opcional: navegar al foro
+                          context.push('/forum');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.error_outline, color: Colors.white),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(notifier.errorMessage ?? 'Error al compartir'),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: const Text('Compartir'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Filtra el texto de respuesta para remover menciones de profesionistas
+  /// cuando ya se van a mostrar en las cards
+  String _filtrarTextoRespuesta(Consultation consultation) {
+    String respuesta = consultation.response;
+    
+    // Si hay profesionistas, remover secciones que los mencionan
+    if (consultation.tieneProfesionistas) {
+      // Patrones comunes de texto que menciona profesionistas
+      final patronesProfesionistas = [
+        RegExp(r'(?:Profesionistas?|Abogados?)\s+(?:especializados?|recomendados?).*?\n(?:\d+\..*?\n)*', 
+               caseSensitive: false, multiLine: true),
+        RegExp(r'\n\d+\.\s+\*\*[A-Z][a-záéíóúñ\s]+\*\*.*?(?=\n\n|\n\d+\.|\$)', 
+               caseSensitive: false, multiLine: true, dotAll: true),
+        RegExp(r'(?:Te recomiendo|Recomiendo)\s+(?:a|los siguientes).*?profesionistas?:.*?(?=\n\n|\$)', 
+               caseSensitive: false, multiLine: true, dotAll: true),
+        RegExp(r'### Profesionistas.*?(?=\n###|\$)', 
+               caseSensitive: false, multiLine: true, dotAll: true),
+      ];
+      
+      for (var patron in patronesProfesionistas) {
+        respuesta = respuesta.replaceAll(patron, '');
+      }
+    }
+    
+    // Si hay anunciantes, remover secciones que los mencionan
+    if (consultation.tieneAnunciantes) {
+      final patronesAnunciantes = [
+        RegExp(r'### Servicios?.*?(?=\n###|\$)', 
+               caseSensitive: false, multiLine: true, dotAll: true),
+        RegExp(r'(?:Servicios?|Grúas?|Talleres?)\s+cercanos?:.*?(?=\n\n|\$)', 
+               caseSensitive: false, multiLine: true, dotAll: true),
+      ];
+      
+      for (var patron in patronesAnunciantes) {
+        respuesta = respuesta.replaceAll(patron, '');
+      }
+    }
+    
+    // Limpiar líneas vacías múltiples
+    respuesta = respuesta.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+    respuesta = respuesta.trim();
+    
+    return respuesta;
   }
 }

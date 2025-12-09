@@ -21,6 +21,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isWeb = size.width > 900;
+    final isMobile = size.width < 600;
 
     return Scaffold(
       backgroundColor: colors.surface,
@@ -46,7 +49,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           return RefreshIndicator(
             onRefresh: () => adminNotifier.loadAdminStats(),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isMobile ? 12 : 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -54,12 +57,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   Card(
                     color: colors.primaryContainer,
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(isMobile ? 12 : 16),
                       child: Row(
                         children: [
                           Icon(
                             Icons.dashboard,
-                            size: 32,
+                            size: isMobile ? 28 : 32,
                             color: colors.onPrimaryContainer,
                           ),
                           const SizedBox(width: 12),
@@ -68,7 +71,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               '¡Bienvenido al Panel de Administración!\nAquí puedes gestionar toda la plataforma LexIA.',
                               style: TextStyle(
                                 color: colors.onPrimaryContainer,
-                                fontSize: 16,
+                                fontSize: isMobile ? 14 : 16,
                               ),
                             ),
                           ),
@@ -85,42 +88,51 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colors.onSurface,
+                      fontSize: isMobile ? 18 : null,
                     ),
                   ),
                   const SizedBox(height: 16),
                   
-                  // Grid de estadísticas
+                  // Grid de estadísticas - responsive
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.3,
+                    crossAxisCount: isWeb ? 4 : (isMobile ? 1 : 2),
+                    crossAxisSpacing: isMobile ? 12 : 16,
+                    mainAxisSpacing: isMobile ? 12 : 16,
+                    childAspectRatio: isMobile ? 1.8 : 1.3,
                     children: [
                       _buildStatCard(
                         'Usuarios Totales',
                         '${adminNotifier.stats['totalUsers']}',
                         Icons.people,
                         Colors.blue,
+                        colors,
+                        isMobile,
                       ),
                       _buildStatCard(
                         'Abogados Verificados',
                         '${adminNotifier.stats['totalLawyers']}',
                         Icons.gavel,
                         Colors.purple,
+                        colors,
+                        isMobile,
                       ),
                       _buildStatCard(
                         'Consultas Realizadas',
                         '${adminNotifier.stats['totalConsultations']}',
                         Icons.chat_bubble,
                         Colors.green,
+                        colors,
+                        isMobile,
                       ),
                       _buildStatCard(
                         'Usuarios Activos',
                         '${adminNotifier.stats['activeUsers']}',
                         Icons.online_prediction,
                         Colors.orange,
+                        colors,
+                        isMobile,
                       ),
                     ],
                   ),
@@ -143,6 +155,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icons.verified_user,
                     Colors.blue,
                     () => context.go('/${AppRoutes.profileValidation}'),
+                    colors,
                   ),
 
                   const SizedBox(height: 12),
@@ -153,6 +166,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icons.report_problem,
                     Colors.red,
                     () => context.go('/${AppRoutes.moderation}'),
+                    colors,
                   ),
 
                   const SizedBox(height: 12),
@@ -163,6 +177,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icons.people_outline,
                     Colors.purple,
                     () => context.go('/${AppRoutes.userManagement}'),
+                    colors,
                   ),
 
                   const SizedBox(height: 12),
@@ -173,6 +188,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icons.content_paste,
                     Colors.green,
                     () => _showMessage('Panel de gestión de contenido'),
+                    colors,
                   ),
 
                   const SizedBox(height: 12),
@@ -183,6 +199,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     Icons.settings,
                     Colors.grey,
                     () => _showMessage('Panel de configuración'),
+                    colors,
                   ),
 
                   const SizedBox(height: 32),
@@ -237,7 +254,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, ColorScheme colorScheme, bool isMobile) {
     return Card(
       elevation: 4,
       child: Container(
@@ -253,20 +270,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(isMobile ? 12 : 16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 32,
+                size: isMobile ? 28 : 32,
                 color: color,
               ),
               const SizedBox(height: 8),
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: isMobile ? 20 : 24,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
@@ -276,10 +293,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+                  fontSize: isMobile ? 11 : 12,
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -288,7 +307,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildActionCard(String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionCard(String title, String subtitle, IconData icon, Color color, VoidCallback onTap, ColorScheme colorScheme) {
     return Card(
       elevation: 2,
       child: ListTile(
@@ -313,7 +332,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: Text(
             subtitle,
             style: TextStyle(
-              color: Colors.grey[600],
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),

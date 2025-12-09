@@ -6,8 +6,10 @@ class ForumExpertComment extends StatelessWidget {
   final String date;
   final String comment;
   final int likes;
+  final bool isLiked;
   final int replies;
   final VoidCallback onLike;
+  final VoidCallback? onReply;
 
   const ForumExpertComment({
     super.key,
@@ -16,27 +18,23 @@ class ForumExpertComment extends StatelessWidget {
     required this.date,
     required this.comment,
     required this.likes,
+    this.isLiked = false,
     required this.replies,
     required this.onLike,
+    this.onReply,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,11 +44,11 @@ class ForumExpertComment extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.grey.shade400,
+                backgroundColor: colorScheme.secondary,
                 child: Text(
                   userInitials,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colorScheme.onSecondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
@@ -65,13 +63,13 @@ class ForumExpertComment extends StatelessWidget {
                       userName,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: colors.tertiary,
+                            color: colorScheme.onSurface,
                           ),
                     ),
                     Text(
                       date,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.tertiary.withOpacity(0.5),
+                            color: colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -86,7 +84,7 @@ class ForumExpertComment extends StatelessWidget {
           Text(
             comment,
             style: TextStyle(
-              color: colors.tertiary,
+              color: colorScheme.onSurface,
               fontSize: 15,
               height: 1.5,
             ),
@@ -96,33 +94,54 @@ class ForumExpertComment extends StatelessWidget {
 
           // Footer
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              InkWell(
+              GestureDetector(
                 onTap: onLike,
                 child: Row(
                   children: [
-                    Icon(Icons.star_outline, size: 18, color: colors.tertiary.withOpacity(0.6)),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.all(isLiked ? 6 : 2),
+                      decoration: BoxDecoration(
+                        color: isLiked ? colorScheme.primaryContainer : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                        size: 18,
+                        color: isLiked ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      '$likes',
+                      'Útil ($likes)',
                       style: TextStyle(
-                        color: colors.tertiary.withOpacity(0.6),
-                        fontSize: 14,
+                        color: isLiked ? colorScheme.onPrimaryContainer : colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: isLiked ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
               Row(
                 children: [
-                  Icon(Icons.people_outline, size: 18, color: colors.tertiary.withOpacity(0.6)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$replies',
-                    style: TextStyle(
-                      color: colors.tertiary.withOpacity(0.6),
-                      fontSize: 14,
+                  InkWell(
+                    onTap: onReply,
+                    child: Row(
+                      children: [
+                        Icon(Icons.reply_outlined, size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Responder',
+                          style: TextStyle(
+                            color: colorScheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

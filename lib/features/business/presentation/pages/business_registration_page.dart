@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/basic_info_form.dart';
 import '../widgets/services_schedule_form.dart';
-import '../widgets/document_upload_section.dart';
 import '../widgets/plan_selection_section.dart';
 
 class BusinessRegistrationPage extends StatefulWidget {
@@ -122,13 +121,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
           child: ConstrainedBox(
             constraints:
                 BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: colors.secondary,
-                ),
-              ),
-              child: Stepper(
+            child: Stepper(
                 currentStep: _currentStep,
                 onStepContinue: () {
                   if (_currentStep < 3) {
@@ -151,7 +144,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
                 },
                 controlsBuilder: (context, details) {
                   final isFirstStep = details.stepIndex == 0;
-                  final isLastStep = details.stepIndex == 3;
+                  final isLastStep = details.stepIndex == 2;
 
                   return Row(
                     children: [
@@ -163,7 +156,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
                                   !_formKey.currentState!.validate()) {
                                 return;
                               }
-                              if (details.stepIndex < 3) {
+                              if (details.stepIndex < 2) {
                                 setState(() {
                                   _currentStep++;
                                 });
@@ -295,17 +288,9 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
                     ),
                   ),
                   Step(
-                    title: const Text('Documentos'),
+                    title: const Text('Plan de Negocio'),
                     isActive: _currentStep >= 2,
                     state: _currentStep > 2
-                        ? StepState.complete
-                        : StepState.indexed,
-                    content: const DocumentUploadSection(),
-                  ),
-                  Step(
-                    title: const Text('Plan de Negocio'),
-                    isActive: _currentStep >= 3,
-                    state: _currentStep > 3
                         ? StepState.complete
                         : StepState.indexed,
                     content: PlanSelectionSection(
@@ -318,7 +303,6 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
                     ),
                   ),
                 ],
-              ),
             ),
           ),
         ),

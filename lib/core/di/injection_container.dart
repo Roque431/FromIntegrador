@@ -63,6 +63,9 @@ import '../../features/history/presentation/providers/historial_notifier.dart';
 import '../../features/chat/data/repository/chat_privado_repository.dart';
 import '../../features/chat/presentation/providers/chat_privado_notifier.dart';
 
+// Admin Feature
+import '../../features/admin/data/datasources/admin_datasource.dart';
+
 // Security - Secure Storage
 import '../storage/secure_token_repository.dart';
 
@@ -193,7 +196,9 @@ Future<void> initializeDependencies() async {
     () => HomeNotifier(
       sendMessageUseCase: sl(),
       getChatHistoryUseCase: sl(),
-        loginRepository: sl(),
+      loginRepository: sl(),
+      apiClient: sl(),
+      foroRepository: sl(),
     ),
   );
 
@@ -314,5 +319,14 @@ Future<void> initializeDependencies() async {
       repository: sl(),
       currentUserId: userId,
     ),
+  );
+
+  // ============================================
+  // Admin Feature
+  // ============================================
+  
+  // Data sources
+  sl.registerLazySingleton<AdminDataSource>(
+    () => AdminDataSourceImpl(apiClient: sl()),
   );
 }

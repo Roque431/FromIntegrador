@@ -18,103 +18,78 @@ class AdminDataSourceImpl implements AdminDataSource {
   @override
   Future<AdminStatsModel> getAdminStats() async {
     try {
-      // Por ahora retornamos datos mock, luego se conectará al endpoint real
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      return AdminStatsModel(
-        usuariosActivos: 2847,
-        abogadosVerificados: 423,
-        anunciantesActivos: 156,
-        consultasDelMes: 6234,
-        crecimientoUsuarios: 12.0,
-        crecimientoAbogados: 8.0,
-        crecimientoAnunciantes: 15.0,
-        crecimientoConsultas: 23.0,
+      final response = await apiClient.get(
+        ApiEndpoints.adminStats,
+        requiresAuth: true,
       );
-
-      // TODO: Implementar llamada real al endpoint
-      // final response = await apiClient.get(
-      //   '${ApiEndpoints.admin}/stats',
-      //   requiresAuth: true,
-      // );
-      // return AdminStatsModel.fromJson(response);
+      
+      return AdminStatsModel.fromJson(response);
     } catch (e) {
-      throw Exception('Error al obtener estadísticas: $e');
+      // Si falla la API, retornar datos mock para que no se rompa la UI
+      print('⚠️ Error al obtener estadísticas de admin: $e');
+      return AdminStatsModel(
+        usuariosActivos: 0,
+        abogadosVerificados: 0,
+        anunciantesActivos: 0,
+        consultasDelMes: 0,
+        crecimientoUsuarios: 0.0,
+        crecimientoAbogados: 0.0,
+        crecimientoAnunciantes: 0.0,
+        crecimientoConsultas: 0.0,
+      );
     }
   }
 
   @override
   Future<List<Map<String, dynamic>>> getPendingProfiles() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
+      final response = await apiClient.get(
+        ApiEndpoints.adminPendingProfiles,
+        requiresAuth: true,
+      );
       
-      // Datos mock para perfiles pendientes
-      return [
-        {
-          'id': '1',
-          'nombre': 'Ana María González',
-          'email': 'ana.gonzalez@email.com',
-          'cedula': '8766432',
-          'fecha_solicitud': '2024-12-01T10:30:00Z',
-        },
-        {
-          'id': '2',
-          'nombre': 'Carlos Ruiz López',
-          'email': 'carlos.ruiz@email.com',
-          'cedula': '9876543',
-          'fecha_solicitud': '2024-12-02T14:15:00Z',
-        },
-      ];
+      if (response is List) {
+        return List<Map<String, dynamic>>.from(response);
+      }
+      return [];
     } catch (e) {
-      throw Exception('Error al obtener perfiles pendientes: $e');
+      print('⚠️ Error al obtener perfiles pendientes: $e');
+      return [];
     }
   }
 
   @override
   Future<List<Map<String, dynamic>>> getPendingReports() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 300));
+      final response = await apiClient.get(
+        ApiEndpoints.adminPendingReports,
+        requiresAuth: true,
+      );
       
-      // Datos mock para reportes pendientes
-      return [
-        {
-          'id': '1',
-          'tipo': 'Contenido inapropiado',
-          'descripcion': 'Publicación ofensiva en el foro',
-          'reportado_por': 'Usuario123',
-          'fecha_reporte': '2024-12-03T09:45:00Z',
-        },
-        {
-          'id': '2',
-          'tipo': 'Spam',
-          'descripcion': 'Múltiples publicaciones promocionales',
-          'reportado_por': 'ModeradorX',
-          'fecha_reporte': '2024-12-03T16:20:00Z',
-        },
-      ];
+      if (response is List) {
+        return List<Map<String, dynamic>>.from(response);
+      }
+      return [];
     } catch (e) {
-      throw Exception('Error al obtener reportes pendientes: $e');
+      print('⚠️ Error al obtener reportes pendientes: $e');
+      return [];
     }
   }
 
   @override
   Future<bool> validateProfile(String profileId, bool approved) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // TODO: Implementar llamada real al endpoint
-      // final response = await apiClient.post(
-      //   '${ApiEndpoints.admin}/validate-profile',
-      //   body: {
-      //     'profile_id': profileId,
-      //     'approved': approved,
-      //   },
-      //   requiresAuth: true,
-      // );
-      // return response['success'] ?? false;
-      
-      return true; // Mock response
+      final response = await apiClient.post(
+        ApiEndpoints.adminValidateProfile,
+        body: {
+          'profile_id': profileId,
+          'approved': approved,
+        },
+        requiresAuth: true,
+      );
+      return response['success'] ?? false;
     } catch (e) {
+      print('⚠️ Error al validar perfil: $e');
       throw Exception('Error al validar perfil: $e');
     }
   }
@@ -122,21 +97,17 @@ class AdminDataSourceImpl implements AdminDataSource {
   @override
   Future<bool> moderateContent(String contentId, String action) async {
     try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // TODO: Implementar llamada real al endpoint
-      // final response = await apiClient.post(
-      //   '${ApiEndpoints.admin}/moderate-content',
-      //   body: {
-      //     'content_id': contentId,
-      //     'action': action, // 'approve', 'reject', 'remove'
-      //   },
-      //   requiresAuth: true,
-      // );
-      // return response['success'] ?? false;
-      
-      return true; // Mock response
+      final response = await apiClient.post(
+        ApiEndpoints.adminModerateContent,
+        body: {
+          'content_id': contentId,
+          'action': action, // 'approve', 'reject', 'remove'
+        },
+        requiresAuth: true,
+      );
+      return response['success'] ?? false;
     } catch (e) {
+      print('⚠️ Error al moderar contenido: $e');
       throw Exception('Error al moderar contenido: $e');
     }
   }

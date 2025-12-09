@@ -93,6 +93,9 @@ class _LegalMapPageState extends State<LegalMapPage> {
         _isLoading = false;
       });
 
+      // Refrescar marcador de ubicación actual
+      _updateMapMarkers();
+
       if (_mapController != null) {
         _mapController!.move(
           LatLng(position.latitude, position.longitude),
@@ -776,32 +779,34 @@ class _LegalMapPageState extends State<LegalMapPage> {
         padding: EdgeInsets.all(ResponsiveSize.horizontalPadding(context)),
         child: ResponsiveCard(
           padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: colorScheme.error.withValues(alpha: 0.7)),
-              const SizedBox(height: 16),
-              Text(
-                'Error',
-                style: TextStyle(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: colorScheme.error.withValues(alpha: 0.7)),
+                const SizedBox(height: 16),
+                Text(
+                  'Error',
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _errorMessage!,
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ResponsiveButton(
-                text: 'Reintentar',
-                onPressed: _getCurrentLocation,
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  _errorMessage!,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ResponsiveButton(
+                  text: 'Reintentar',
+                  onPressed: _getCurrentLocation,
+                ),
+              ],
+            ),
           ),
         ),
       );

@@ -111,8 +111,10 @@ Future<void> main() async {
           },
         ),
 
-        // Admin - Versión simplificada para testing
-        ChangeNotifierProvider(create: (_) => SimpleAdminNotifier()),
+        // Admin - Conectado con datasource real
+        ChangeNotifierProvider(create: (_) => SimpleAdminNotifier(
+          adminDataSource: di.sl(),
+        )),
 
         // Profile Validation - Versión simplificada para testing
         ChangeNotifierProvider(create: (_) => SimpleProfileValidationNotifier()),

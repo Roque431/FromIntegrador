@@ -22,6 +22,8 @@ class _ModerationPageState extends State<ModerationPage> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
 
     return Scaffold(
       backgroundColor: colors.surface,
@@ -43,6 +45,7 @@ class _ModerationPageState extends State<ModerationPage> {
           style: TextStyle(
             color: colors.onPrimary,
             fontWeight: FontWeight.w600,
+            fontSize: isMobile ? 18 : 20,
           ),
         ),
       ),
@@ -53,12 +56,12 @@ class _ModerationPageState extends State<ModerationPage> {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
             children: [
               Text(
                 'Panel de Moderación',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: isMobile ? 20 : 24,
                   fontWeight: FontWeight.bold,
                   color: colors.onSurface,
                 ),
@@ -68,63 +71,86 @@ class _ModerationPageState extends State<ModerationPage> {
               // Estadísticas básicas
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isMobile ? 12 : 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Estadísticas',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: isMobile ? 16 : 18,
                           fontWeight: FontWeight.w600,
                           color: colors.onSurface,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                '${notifier.reportes.length}',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
+                      // Estadísticas responsive
+                      isMobile
+                          ? Column(
+                              children: [
+                                _buildStatItem(
+                                  'Total',
+                                  '${notifier.reportes.length}',
+                                  Colors.blue,
                                 ),
-                              ),
-                              const Text('Total'),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '${notifier.reportesPendientes.length}',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
+                                const SizedBox(height: 12),
+                                _buildStatItem(
+                                  'Pendientes',
+                                  '${notifier.reportesPendientes.length}',
+                                  Colors.orange,
                                 ),
-                              ),
-                              const Text('Pendientes'),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '${notifier.reportesResueltos.length}',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                const SizedBox(height: 12),
+                                _buildStatItem(
+                                  'Resueltos',
+                                  '${notifier.reportesResueltos.length}',
+                                  Colors.green,
                                 ),
-                              ),
-                              const Text('Resueltos'),
-                            ],
-                          ),
-                        ],
-                      ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    Text(
+                                      '${notifier.reportes.length}',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    const Text('Total'),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Text(
+                                      '${notifier.reportesPendientes.length}',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange,
+                                      ),
+                                    ),
+                                    const Text('Pendientes'),
+                                  ],
+                                ),
+                                Column(
+                                  children: [
+                                    Text(
+                                      '${notifier.reportesResueltos.length}',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                    const Text('Resueltos'),
+                                  ],
+                                ),
+                              ],
+                            ),
                     ],
                   ),
                 ),
@@ -135,7 +161,7 @@ class _ModerationPageState extends State<ModerationPage> {
               Text(
                 'Reportes Recientes',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: isMobile ? 16 : 18,
                   fontWeight: FontWeight.w600,
                   color: colors.onSurface,
                 ),
@@ -739,6 +765,42 @@ class _ModerationPageState extends State<ModerationPage> {
   }
 
   // Métodos auxiliares para colores
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getPriorityColor(String? prioridad) {
     switch (prioridad?.toLowerCase()) {
       case 'alta':

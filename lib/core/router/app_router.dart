@@ -30,6 +30,9 @@ import '../../features/register/presentation/pages/verify_email_page.dart';
 import '../../features/welcome/presentation/pages/welcome_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/profile/presentation/pages/about_page.dart';
+import '../../features/profile/presentation/pages/help_center_page.dart';
+import '../../features/profile/presentation/pages/password_recovery_page.dart' as pwd_recovery;
 import '../../features/subscription/presentation/pages/subscription_screen.dart';
 import '../../features/history/presentation/pages/history_page.dart';
 
@@ -83,6 +86,21 @@ class AppRouter {
         name: AppRoutes.editProfile,
         path: '/profile/edit',
         builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        name: AppRoutes.aboutApp,
+        path: '/profile/about',
+        builder: (context, state) => const AboutPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.helpCenter,
+        path: '/profile/help',
+        builder: (context, state) => const HelpCenterPage(),
+      ),
+      GoRoute(
+        name: AppRoutes.passwordRecovery,
+        path: '/profile/password-recovery',
+        builder: (context, state) => const pwd_recovery.PasswordRecoveryPage(),
       ),
       GoRoute(
         name: AppRoutes.subscription,
@@ -252,8 +270,14 @@ class AppRouter {
         final loginNotifier = context.read<LoginNotifier>();
         final user = loginNotifier.currentUser;
 
-        if (user != null && user.isLawyer) {
-          return '/lawyer';
+        if (user != null) {
+          final email = user.email.toLowerCase();
+          if (email == 'admin@lexia.local') {
+            return '/admin';
+          }
+          if (user.isLawyer) {
+            return '/lawyer';
+          }
         }
         return '/home';
       }

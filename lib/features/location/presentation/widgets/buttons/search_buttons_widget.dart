@@ -19,42 +19,62 @@ class SearchButtonsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     
-    return ResponsiveCard(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: ResponsiveButton(
-                  text: 'Buscar',
-                  icon: Icon(Icons.search, color: Colors.white, size: 20),
-                  isLoading: isLoading,
-                  onPressed: onSearchNearby,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ResponsiveButton(
-                  text: 'Asesoría',
-                  icon: Icon(Icons.help_outline, color: colorScheme.primary, size: 20),
-                  isOutlined: true,
-                  isLoading: isLoading,
-                  onPressed: onGetAdvisory,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ResponsiveButton(
-            text: 'Oficinas de Tránsito',
-            icon: Icon(Icons.traffic, color: colorScheme.primary, size: 20),
-            isOutlined: true,
-            isLoading: isLoading,
-            onPressed: onGetTransitOffices,
-          ),
-        ],
-      ),
-    );
+     return ResponsiveCard(
+       padding: const EdgeInsets.all(16),
+       child: SingleChildScrollView(
+         child: Column(
+           children: [
+             Row(
+               children: [
+                 Expanded(
+                   child: SizedBox(
+                     height: 48,
+                     child: FilledButton.icon(
+                       icon: const Icon(Icons.search, size: 18),
+                       label: const Text('Buscar'),
+                       onPressed: isLoading ? null : onSearchNearby,
+                       style: FilledButton.styleFrom(
+                         backgroundColor: colorScheme.primary,
+                         disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.5),
+                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                       ),
+                     ),
+                   ),
+                 ),
+                 const SizedBox(width: 12),
+                 Expanded(
+                   child: SizedBox(
+                     height: 48,
+                     child: OutlinedButton.icon(
+                       icon: Icon(Icons.help_outline, size: 18, color: colorScheme.primary),
+                       label: Text('Asesoría', style: TextStyle(color: colorScheme.primary)),
+                       onPressed: isLoading ? null : onGetAdvisory,
+                       style: OutlinedButton.styleFrom(
+                         side: BorderSide(color: colorScheme.primary),
+                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                       ),
+                     ),
+                   ),
+                 ),
+               ],
+             ),
+             const SizedBox(height: 12),
+             SizedBox(
+               width: double.infinity,
+               height: 48,
+               child: OutlinedButton.icon(
+                 icon: Icon(Icons.traffic, size: 18, color: colorScheme.primary),
+                 label: Text('Oficinas de Tránsito', style: TextStyle(color: colorScheme.primary)),
+                 onPressed: isLoading ? null : onGetTransitOffices,
+                 style: OutlinedButton.styleFrom(
+                   side: BorderSide(color: colorScheme.primary),
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                 ),
+               ),
+             ),
+           ],
+         ),
+       ),
+     );
   }
 }

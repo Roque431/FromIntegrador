@@ -30,14 +30,20 @@ class _UserManagementPageState extends State<UserManagementPage>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
+
     return Consumer<SimpleUserManagementNotifier>(
       builder: (context, notifier, _) {
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Gestión de Usuarios',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: isMobile ? 18 : 20,
+              ),
             ),
             backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
             foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
@@ -51,15 +57,16 @@ class _UserManagementPageState extends State<UserManagementPage>
               labelColor: Colors.blue[600],
               unselectedLabelColor: Colors.grey[600],
               indicatorColor: Colors.blue[600],
+              isScrollable: isMobile,
               tabs: [
                 Tab(
-                  text: 'Todos (${notifier.totalUsuarios})',
+                  text: isMobile ? 'Todos' : 'Todos (${notifier.totalUsuarios})',
                 ),
                 Tab(
-                  text: 'Activos (${notifier.usuariosActivos})',
+                  text: isMobile ? 'Activos' : 'Activos (${notifier.usuariosActivos})',
                 ),
                 Tab(
-                  text: 'Suspendidos (${notifier.usuariosSuspendidos})',
+                  text: isMobile ? 'Suspendidos' : 'Suspendidos (${notifier.usuariosSuspendidos})',
                 ),
                 Tab(
                   text: 'Estadísticas',
@@ -83,10 +90,10 @@ class _UserManagementPageState extends State<UserManagementPage>
           body: TabBarView(
             controller: _tabController,
             children: [
-              _buildUsersList(notifier), // Todos
-              _buildUsersList(notifier), // Activos  
-              _buildUsersList(notifier), // Suspendidos
-              _buildStatsView(notifier), // Estadísticas
+              _buildUsersList(notifier, isMobile), // Todos
+              _buildUsersList(notifier, isMobile), // Activos  
+              _buildUsersList(notifier, isMobile), // Suspendidos
+              _buildStatsView(notifier, isMobile), // Estadísticas
             ],
           ),
         );
@@ -94,7 +101,7 @@ class _UserManagementPageState extends State<UserManagementPage>
     );
   }
 
-  Widget _buildUsersList(SimpleUserManagementNotifier notifier) {
+  Widget _buildUsersList(SimpleUserManagementNotifier notifier, bool isMobile) {
     return Column(
       children: [
         // Barra de búsqueda
@@ -362,55 +369,84 @@ class _UserManagementPageState extends State<UserManagementPage>
     );
   }
 
-  Widget _buildStatsView(SimpleUserManagementNotifier notifier) {
+  Widget _buildStatsView(SimpleUserManagementNotifier notifier, bool isMobile) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       child: Column(
         children: [
-          // Cards de estadísticas
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Total Usuarios',
-                  notifier.totalUsuarios.toString(),
-                  Icons.people,
-                  Colors.blue,
+          // Cards de estadísticas - responsive
+          isMobile
+              ? Column(
+                  children: [
+                    _buildStatCard(
+                      'Total Usuarios',
+                      notifier.totalUsuarios.toString(),
+                      Icons.people,
+                      Colors.blue,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStatCard(
+                      'Usuarios Activos',
+                      notifier.usuariosActivos.toString(),
+                      Icons.check_circle,
+                      Colors.green,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildStatCard(
+                      'Usuarios Suspendidos',
+                      notifier.usuariosSuspendidos.toString(),
+                      Icons.block,
+                      Colors.red,
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'Total Usuarios',
+                            notifier.totalUsuarios.toString(),
+                            Icons.people,
+                            Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Usuarios Activos',
+                            notifier.usuariosActivos.toString(),
+                            Icons.check_circle,
+                            Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'Usuarios Suspendidos',
+                            notifier.usuariosSuspendidos.toString(),
+                            Icons.block,
+                            Colors.red,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            'Nuevos (7 días)',
+                            '3',
+                            Icons.trending_up,
+                            Colors.purple,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Usuarios Activos',
-                  notifier.usuariosActivos.toString(),
-                  Icons.check_circle,
-                  Colors.green,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Usuarios Suspendidos',
-                  notifier.usuariosSuspendidos.toString(),
-                  Icons.block,
-                  Colors.red,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Nuevos (7 días)',
-                  '3',
-                  Icons.trending_up,
-                  Colors.purple,
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 24),
           
           // Gráfico simple de actividad

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_expert_comment.dart';
 import 'package:flutter_application_1/features/forum/widgests/forum_user_post.dart';
-import 'package:flutter_application_1/features/forum/widgests/forum_post_card.dart';
+import 'package:flutter_application_1/features/forum/widgests/group_members_dialog.dart';
 import '../data/models/models.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -20,19 +20,95 @@ class ForumDetailPage extends StatefulWidget {
 }
 
 class _ForumDetailPageState extends State<ForumDetailPage> {
+  // Local in-memory replies map: parentCommentId -> list of replies
+  final Map<String, List<ComentarioModel>> _localReplies = {};
+  final Set<String> _expandedComments = {};
+  // Local dislike state per publicación (optimistic UI)
+  final Map<String, bool> _localDisliked = {};
+  final Map<String, int> _localNoUtilCount = {};
+  // Local comment like state
+  final Map<String, bool> _localCommentLiked = {};
+  final Map<String, int> _localCommentLikes = {};
   @override
   void initState() {
     super.initState();
     // Cargar publicación al entrar
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ForoNotifier>().loadPublicacion(widget.postId);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<ForoNotifier>().loadPublicacion(widget.postId);
+      // Process replies after loading: group comments by parentId
+      _groupReplies();
+
+      // Initialize local optimistic maps based on server values
+      final publicacion = context.read<ForoNotifier>().publicacionActual;
+      if (publicacion != null) {
+        _localDisliked[publicacion.id] = publicacion.yaMarcoNoUtil;
+        _localNoUtilCount[publicacion.id] = 0; // use delta for optimistic changes
+      }
+
+      final comentarios = context.read<ForoNotifier>().comentariosActuales;
+      for (final c in comentarios) {
+        _localCommentLiked[c.id] = c.yaLeDioLike;
+        _localCommentLikes[c.id] = 0;
+      }
+      if (mounted) setState(() {});
     });
   }
 
-  void _showAddCommentDialog(BuildContext context) {
+  /// Agrupar respuestas anidadas basadas en parentId
+  void _groupReplies() {
+    final comentarios = context.read<ForoNotifier>().comentariosActuales;
+    _localReplies.clear();
+    
+    for (final comment in comentarios) {
+      if (comment.parentId != null && comment.parentId!.isNotEmpty) {
+        final parentId = comment.parentId!;
+        _localReplies.putIfAbsent(parentId, () => []).add(comment);
+      }
+    }
+  }
+
+  void _showGroupMembers(BuildContext context, PublicacionModel publicacion) {
+    final notifier = context.read<ForoNotifier>();
+    
+    // Cargar miembros desde el backend
+    notifier.getCategoryMembers(publicacion.categoriaId).then((members) {
+      if (!context.mounted) return;
+      
+      // Convertir respuesta a GroupMember
+      final groupMembers = members
+          .map((m) => GroupMember(
+                id: m['id'],
+                name: m['name'],
+                initials: _getInitials(m['name']),
+                participations: m['participations'] ?? 0,
+                isActive: m['isActive'] ?? true,
+              ))
+          .toList();
+
+      showDialog(
+        context: context,
+        builder: (ctx) => GroupMembersDialog(
+          groupName: publicacion.categoriaNombre,
+          totalMembers: groupMembers.length,
+          members: groupMembers,
+        ),
+      );
+    });
+  }
+
+  /// Obtener iniciales de un nombre
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+
+  void _showAddCommentDialog(BuildContext context, {String? parentId}) {
     final notifier = context.read<ForoNotifier>();
     final commentController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -52,21 +128,36 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           ),
           FilledButton(
             onPressed: () async {
-              if (commentController.text.trim().isNotEmpty) {
-                Navigator.pop(ctx);
-                final result = await notifier.agregarComentario(
-                  publicacionId: widget.postId,
-                  contenido: commentController.text.trim(),
-                );
-                if (result != null && mounted) {
+              if (commentController.text.trim().isEmpty) return;
+              Navigator.pop(ctx);
+
+              // Both top-level and replies are sent to backend
+              // The backend will handle the parentId to maintain the thread structure
+              final result = await notifier.agregarComentario(
+                publicacionId: widget.postId,
+                contenido: commentController.text.trim(),
+                parentId: parentId,
+              );
+              
+              if (result != null && mounted) {
+                // Add to local map for immediate UI update
+                if (parentId != null) {
+                  setState(() {
+                    _localReplies.putIfAbsent(parentId, () => []).add(result);
+                    _expandedComments.add(parentId);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Respuesta agregada')),
+                  );
+                } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Comentario agregado')),
                   );
-                } else if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(notifier.errorMessage ?? 'Error al comentar')),
-                  );
                 }
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(notifier.errorMessage ?? 'Error al comentar')),
+                );
               }
             },
             child: const Text('Publicar'),
@@ -177,12 +268,51 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               tags: const [],
               question: publicacion.titulo,
               likes: publicacion.likes,
-              comments: comentarios.length,
+              // Count only top-level comments (no replies)
+              comments: comentarios.where((c) => c.parentId == null || c.parentId!.isEmpty).length,
               isLiked: publicacion.yaLeDioLike,
+              isDisliked: _localDisliked[publicacion.id] ?? publicacion.yaMarcoNoUtil,
+              noUtilCount: (publicacion.noUtilCount) + (_localNoUtilCount[publicacion.id] ?? 0),
               onLike: () {
                 notifier.toggleLike(publicacion.id);
               },
-              onDislike: () => notifier.reportUtilidad(publicacion.id, false),
+              onDislike: () async {
+                if (context.read<ForoNotifier>().currentUserId == null) return;
+
+                // Optimistic UI: toggle disliked state locally (delta)
+                setState(() {
+                  final currently = _localDisliked[publicacion.id] ?? publicacion.yaMarcoNoUtil;
+                  _localDisliked[publicacion.id] = !currently;
+                  final currentDelta = _localNoUtilCount[publicacion.id] ?? 0;
+                  _localNoUtilCount[publicacion.id] = currently ? (currentDelta - 1).clamp(0, 9999) : (currentDelta + 1);
+                });
+
+                try {
+                  await notifier.toggleNoUtil(publicacion.id);
+                  // server updated models; clear optimistic delta to avoid double counting
+                  setState(() {
+                    _localNoUtilCount[publicacion.id] = 0;
+                    _localDisliked[publicacion.id] = notifier.publicacionActual?.yaMarcoNoUtil ?? (_localDisliked[publicacion.id] ?? false);
+                  });
+                } catch (e) {
+                  // revert optimistic change
+                  setState(() {
+                    final currently = _localDisliked[publicacion.id] ?? false;
+                    _localDisliked[publicacion.id] = !currently;
+                    final currentDelta = _localNoUtilCount[publicacion.id] ?? 0;
+                    _localNoUtilCount[publicacion.id] = currently ? (currentDelta - 1).clamp(0, 9999) : (currentDelta + 1);
+                  });
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(notifier.errorMessage ?? 'Error al marcar no útil')),
+                    );
+                  }
+                }
+              },
+              onGroupTap: () => _showGroupMembers(context, publicacion),
+              onReplyTap: () {
+                _showAddCommentDialog(context);
+              },
             ),
 
             const SizedBox(height: 16),
@@ -218,9 +348,11 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
 
             const SizedBox(height: 24),
 
+            // "Mis comentarios" removed per UX request
+
             // Título de comentarios
             Text(
-              'Comentarios (${comentarios.length})',
+              'Comentarios (${comentarios.where((c) => c.parentId == null || c.parentId!.isEmpty).length})',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
@@ -229,7 +361,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
 
             const SizedBox(height: 16),
 
-            // Lista de comentarios
+            // Lista de comentarios (con soporte de respuestas anidadas)
             if (comentarios.isEmpty)
               Container(
                 padding: const EdgeInsets.all(24),
@@ -248,86 +380,126 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                 ),
               )
             else
-              ...comentarios.map((comment) => ForumExpertComment(
-                    userName: comment.autorNombre,
-                    userInitials: comment.autorInitials,
-                    date: comment.fechaFormateada,
-                    comment: comment.contenido,
-                    likes: comment.likes,
-                    replies: 0,
-                    onLike: () {
-                      // TODO: Like a comentario
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Función próximamente')),
-                      );
-                    },
-                  )),
+              // Filter only top-level comments (no parentId)
+              ...comentarios
+                  .where((c) => c.parentId == null || c.parentId!.isEmpty)
+                  .map((comment) {
+                final replies = _localReplies[comment.id] ?? [];
+                final isExpanded = _expandedComments.contains(comment.id);
+                // Build like state for this comment
+                final commentIsLiked = _localCommentLiked[comment.id] ?? false;
+                final commentLikes = (comment.likes ?? 0) + (_localCommentLikes[comment.id] ?? 0);
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ForumExpertComment(
+                      userName: comment.autorNombre,
+                      userInitials: comment.autorInitials,
+                      date: comment.fechaFormateada,
+                      comment: comment.contenido,
+                      likes: commentLikes,
+                      isLiked: commentIsLiked,
+                      replies: replies.length,
+                      onLike: () async {
+                        if (context.read<ForoNotifier>().currentUserId == null) return;
+
+                        // optimistic
+                        setState(() {
+                          final current = _localCommentLiked[comment.id] ?? comment.yaLeDioLike;
+                          _localCommentLiked[comment.id] = !current;
+                          final delta = current ? -1 : 1;
+                          _localCommentLikes[comment.id] = (_localCommentLikes[comment.id] ?? 0) + delta;
+                        });
+
+                        try {
+                          await notifier.toggleLikeComentario(comment.id);
+                          // server updated models; reset optimistic delta
+                          setState(() {
+                            _localCommentLikes[comment.id] = 0;
+                            _localCommentLiked[comment.id] = notifier.comentariosActuales.firstWhere((c) => c.id == comment.id).yaLeDioLike;
+                          });
+                        } catch (e) {
+                          // revert optimistic
+                          setState(() {
+                            final current = _localCommentLiked[comment.id] ?? comment.yaLeDioLike;
+                            _localCommentLiked[comment.id] = !current;
+                            final delta = current ? -1 : 1;
+                            _localCommentLikes[comment.id] = (_localCommentLikes[comment.id] ?? 0) + delta;
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(notifier.errorMessage ?? 'Error al dar like al comentario')),
+                            );
+                          }
+                        }
+                      },
+                      onReply: () {
+                        _showAddCommentDialog(context, parentId: comment.id);
+                      },
+                    ),
+                    if (replies.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 40, top: 8, bottom: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  if (isExpanded) _expandedComments.remove(comment.id);
+                                  else _expandedComments.add(comment.id);
+                                });
+                              },
+                              child: Text(
+                                isExpanded ? 'Ocultar respuestas (${replies.length})' : 'Ver respuestas (${replies.length})',
+                                style: TextStyle(color: colorScheme.onSurfaceVariant),
+                              ),
+                            ),
+                            if (isExpanded)
+                              Column(
+                                children: replies.map((r) => Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.surfaceVariant,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 12,
+                                              backgroundColor: colorScheme.secondary,
+                                              child: Text(r.autorInitials, style: TextStyle(color: colorScheme.onSecondary, fontSize: 12)),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(r.autorNombre, style: TextStyle(fontWeight: FontWeight.w600, color: colorScheme.onSurface)),
+                                            const SizedBox(width: 8),
+                                            Text(r.fechaFormateada, style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(r.contenido, style: TextStyle(color: colorScheme.onSurface)),
+                                      ],
+                                    ),
+                                  ),
+                                )).toList(),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              }),
 
             const SizedBox(height: 24),
 
-            // Mis publicaciones (si la publicación es del usuario actual)
-            if (publicacion.usuarioId == notifier.currentUserId)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Mis publicaciones',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  FutureBuilder<List<PublicacionModel>>(
-                    future: notifier.fetchMisPublicaciones(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SizedBox(height: 72, child: Center(child: CircularProgressIndicator()));
-                      }
-
-                      final items = snapshot.data ?? [];
-                      final others = items.where((p) => p.id != publicacion.id).toList();
-
-                      if (others.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text('No tienes otras publicaciones.', style: TextStyle(color: colorScheme.onSurfaceVariant)),
-                        );
-                      }
-
-                      return SizedBox(
-                        height: 160,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: others.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
-                          itemBuilder: (context, index) {
-                            final p = others[index];
-                            return SizedBox(
-                              width: 300,
-                              child: ForumPostCard(
-                                userName: p.autorNombre,
-                                userInitials: p.autorInitials,
-                                date: p.fechaFormateada,
-                                category: p.categoriaNombre,
-                                tags: const [],
-                                question: p.titulo,
-                                excerpt: p.contenido.length > 120 ? '${p.contenido.substring(0, 120)}...' : p.contenido,
-                                likes: p.likes,
-                                comments: p.comentarios,
-                                onTap: () => context.pushNamed('forumDetail', pathParameters: {'id': p.id}),
-                                onLike: () {},
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-
-            const SizedBox(height: 80), // Espacio para el botón flotante
+            // Espacio para el botón flotante
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -404,4 +576,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
       ),
     );
   }
+
+  
 }

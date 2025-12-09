@@ -213,11 +213,18 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         final user = loginNotifier.currentUser;
-        if (user != null && user.isLawyer) {
-          context.go('/lawyer');
-        } else {
-          context.goNamed(AppRoutes.home);
+        if (user != null) {
+          final email = user.email.toLowerCase();
+          if (email == 'admin@lexia.local') {
+            context.go('/admin');
+            return;
+          }
+          if (user.isLawyer) {
+            context.go('/lawyer');
+            return;
+          }
         }
+        context.goNamed(AppRoutes.home);
       } else if (context.mounted) {
         final errorMessage = loginNotifier.errorMessage ?? 'No se pudo iniciar sesión con Google';
         LexiaAlert.error(
@@ -264,11 +271,18 @@ class _LoginPageState extends State<LoginPage> {
           );
 
           final user = loginNotifier.currentUser;
-          if (user != null && user.isLawyer) {
-            context.go('/lawyer');
-          } else {
-            context.goNamed(AppRoutes.home);
+          if (user != null) {
+            final email = user.email.toLowerCase();
+            if (email == 'admin@lexia.local') {
+              context.go('/admin');
+              return;
+            }
+            if (user.isLawyer) {
+              context.go('/lawyer');
+              return;
+            }
           }
+          context.goNamed(AppRoutes.home);
         } else {
           LexiaAlert.error(
             context,

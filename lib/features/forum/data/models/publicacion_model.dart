@@ -9,9 +9,11 @@ class PublicacionModel {
   final String categoriaNombre;
   final DateTime fecha;
   final int vistas;
+  final int noUtilCount;
   final int likes;
   final int comentarios;
   final bool yaLeDioLike;
+  final bool yaMarcoNoUtil;
 
   PublicacionModel({
     required this.id,
@@ -24,9 +26,11 @@ class PublicacionModel {
     required this.categoriaNombre,
     required this.fecha,
     this.vistas = 0,
+    this.noUtilCount = 0,
     this.likes = 0,
     this.comentarios = 0,
     this.yaLeDioLike = false,
+    this.yaMarcoNoUtil = false,
   });
 
   factory PublicacionModel.fromJson(Map<String, dynamic> json) {
@@ -41,9 +45,11 @@ class PublicacionModel {
       categoriaNombre: json['categoriaNombre'] ?? '',
       fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime.now(),
       vistas: json['vistas'] ?? 0,
+      noUtilCount: json['noUtilCount'] ?? 0,
       likes: json['likes'] ?? 0,
       comentarios: json['comentarios'] ?? 0,
       yaLeDioLike: json['yaLeDioLike'] ?? false,
+      yaMarcoNoUtil: json['yaMarcoNoUtil'] ?? false,
     );
   }
 
@@ -59,9 +65,11 @@ class PublicacionModel {
       'categoriaNombre': categoriaNombre,
       'fecha': fecha.toIso8601String(),
       'vistas': vistas,
+      'noUtilCount': noUtilCount,
       'likes': likes,
       'comentarios': comentarios,
       'yaLeDioLike': yaLeDioLike,
+      'yaMarcoNoUtil': yaMarcoNoUtil,
     };
   }
 
@@ -79,7 +87,9 @@ class PublicacionModel {
     int? vistas,
     int? likes,
     int? comentarios,
+    int? noUtilCount,
     bool? yaLeDioLike,
+    bool? yaMarcoNoUtil,
   }) {
     return PublicacionModel(
       id: id ?? this.id,
@@ -94,7 +104,9 @@ class PublicacionModel {
       vistas: vistas ?? this.vistas,
       likes: likes ?? this.likes,
       comentarios: comentarios ?? this.comentarios,
+      noUtilCount: noUtilCount ?? this.noUtilCount,
       yaLeDioLike: yaLeDioLike ?? this.yaLeDioLike,
+      yaMarcoNoUtil: yaMarcoNoUtil ?? this.yaMarcoNoUtil,
     );
   }
 

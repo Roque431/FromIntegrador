@@ -33,12 +33,26 @@ class ApiEndpoints {
   static String chatSessionById(String id) => '$chatSessions/$id';
   static String chatHistory(String usuarioId) => '$chat/history/$usuarioId';
 
+  // Profesionista preference endpoints
+  static const String profesionistasPreferencia = '$chat/profesionista/preferencia';
+
   // Legacy compatibility
   static const String consultas = chat;
   static const String consultations = chatSessions;
   static String consultationById(String id) => '$consultations/$id';
   static String createConsultation = chatMessage;
   static String userConsultations(String userId) => chatHistory(userId);
+
+  // ========================================
+  // Admin endpoints
+  // ========================================
+  static const String admin = '/api/admin';
+  static const String adminStats = '$admin/stats';
+  static const String adminUsers = '$admin/users';
+  static const String adminPendingProfiles = '$admin/pending-profiles';
+  static const String adminPendingReports = '$admin/pending-reports';
+  static const String adminValidateProfile = '$admin/validate-profile';
+  static const String adminModerateContent = '$admin/moderate-content';
 
   // ========================================
   // NLP Service endpoints (Procesamiento de lenguaje natural)
@@ -71,8 +85,11 @@ class ApiEndpoints {
   static String foroPublicacion(String id) => '$foro/publicacion/$id';
   static String foroPublicacionComentario(String id) => '$foro/publicacion/$id/comentario';
   static String foroPublicacionLike(String id) => '$foro/publicacion/$id/like';
+  static String foroPublicacionNoUtil(String id) => '$foro/publicacion/$id/no-util';
+  static String foroCategoryMembers(String categoriaId) => '$foro/categoria/$categoriaId/miembros';
   static const String foroBuscar = '$foro/buscar';
   static String foroMisPublicaciones(String usuarioId) => '$foro/mis-publicaciones/$usuarioId';
+  static String foroComentarioLike(String comentarioId) => '$foro/comentario/$comentarioId/like';
   
   // ========================================
   // Historial de Conversaciones endpoints (Chat Service)

@@ -79,6 +79,8 @@ class ForoNotifier extends ChangeNotifier {
         usuarioId: _currentUserId,
       );
 
+      // no local maps here — models already hold persisted values
+
       // Aplicar ordenamiento según filtro
       _sortPublicaciones();
 
@@ -105,6 +107,8 @@ class ForoNotifier extends ChangeNotifier {
 
       _publicacionActual = result['publicacion'] as PublicacionModel;
       _comentariosActuales = result['comentarios'] as List<ComentarioModel>;
+
+      // state models already include persisted flags/counts
 
       _state = ForoState.success;
       notifyListeners();
@@ -157,6 +161,7 @@ class ForoNotifier extends ChangeNotifier {
   Future<ComentarioModel?> agregarComentario({
     required String publicacionId,
     required String contenido,
+    String? parentId,
   }) async {
     if (_currentUserId == null) {
       _errorMessage = 'Usuario no autenticado';
@@ -170,9 +175,10 @@ class ForoNotifier extends ChangeNotifier {
         publicacionId: publicacionId,
         usuarioId: _currentUserId,
         contenido: contenido,
+        parentId: parentId,
       );
 
-      // Agregar al final de comentarios
+      // Agregar al final de comentarios (backend returns parentId if it's a reply)
       _comentariosActuales.add(comentario);
 
       // Actualizar contador en publicación actual
@@ -228,6 +234,75 @@ class ForoNotifier extends ChangeNotifier {
           likes: totalLikes,
         );
       }
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Toggle 'No útil' persistent
+  Future<void> toggleNoUtil(String publicacionId) async {
+    if (_currentUserId == null) return;
+
+    try {
+      final result = await _repository.toggleNoUtil(
+        publicacionId: publicacionId,
+        usuarioId: _currentUserId,
+      );
+
+      final marked = result['marked'] as bool;
+      final totalNoUtil = result['totalNoUtil'] as int;
+
+      // update publicacionActual
+      if (_publicacionActual != null && _publicacionActual!.id == publicacionId) {
+        _publicacionActual = _publicacionActual!.copyWith(
+          noUtilCount: totalNoUtil,
+          yaMarcoNoUtil: marked,
+        );
+      }
+
+      // update in publicaciones list
+      final idx = _publicaciones.indexWhere((p) => p.id == publicacionId);
+      if (idx != -1) {
+        _publicaciones[idx] = _publicaciones[idx].copyWith(
+          noUtilCount: totalNoUtil,
+          yaMarcoNoUtil: marked,
+        );
+      }
+
+      // keep local maps in sync
+      // local maps are in the UI — UI will reflect model updates
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /// Toggle like for comment (persisted)
+  Future<void> toggleLikeComentario(String comentarioId) async {
+    if (_currentUserId == null) return;
+
+    try {
+      final result = await _repository.toggleLikeComentario(
+        comentarioId: comentarioId,
+        usuarioId: _currentUserId,
+      );
+
+      final liked = result['liked'] as bool;
+      final totalLikes = result['totalLikes'] as int;
+
+      // update comments list
+      final idx = _comentariosActuales.indexWhere((c) => c.id == comentarioId);
+      if (idx != -1) {
+        final old = _comentariosActuales[idx];
+        _comentariosActuales[idx] = old.copyWith(likes: totalLikes, yaLeDioLike: liked);
+      }
+
+      // local optimistic maps are managed by the UI
 
       notifyListeners();
     } catch (e) {
@@ -341,6 +416,16 @@ class ForoNotifier extends ChangeNotifier {
       default:
         _publicaciones.sort((a, b) => b.fecha.compareTo(a.fecha));
         break;
+    }
+  }
+
+  /// Obtener miembros de una categoría
+  Future<List<Map<String, dynamic>>> getCategoryMembers(String categoriaId) async {
+    try {
+      return await _repository.getCategoryMembers(categoriaId);
+    } catch (e) {
+      _errorMessage = e.toString();
+      return [];
     }
   }
 

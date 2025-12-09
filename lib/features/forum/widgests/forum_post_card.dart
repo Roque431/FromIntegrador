@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'group_members_dialog.dart';
 
 class ForumPostCard extends StatelessWidget {
   final String userName;
@@ -159,59 +160,87 @@ class ForumPostCard extends StatelessWidget {
 
               // Footer: Likes y comentarios
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Useful / Not Useful actions
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: onLike,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: Row(
-                            children: [
-                              Icon(Icons.thumb_up, size: 18, color: colorScheme.onSurfaceVariant),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$likes',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+                  // Useful
+                  InkWell(
+                    onTap: onLike,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.thumb_up, size: 18, color: colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Útil ($likes)',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      InkWell(
-                        onTap: onDislike,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: Row(
-                            children: [
-                              Icon(Icons.thumb_down_outlined, size: 18, color: colorScheme.onSurfaceVariant),
-                              const SizedBox(width: 4),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  Row(
-                    children: [
-                      Icon(Icons.people_outline, size: 18, color: colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$comments',
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                        ),
+                  // Not useful
+                  InkWell(
+                    onTap: onDislike,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.thumb_down_outlined, size: 18, color: colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 4),
+                          Text(
+                            'No útil',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ),
+                  // Group members - clickeable
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => GroupMembersDialog(
+                          groupName: 'Grupo de ${category}',
+                          totalMembers: comments,
+                          members: [
+                            GroupMember(
+                              id: '1',
+                              name: userName,
+                              initials: userInitials,
+                              participations: likes,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.people_outline, size: 18, color: colorScheme.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$comments',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -226,13 +255,17 @@ class ForumPostCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color,
+        color: color.withOpacity(isBold ? 1.0 : 0.2),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color,
+          width: isBold ? 0 : 1,
+        ),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: isBold ? Colors.white : Colors.black87,
+          color: isBold ? Colors.white : color,
           fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
           fontSize: 12,
         ),

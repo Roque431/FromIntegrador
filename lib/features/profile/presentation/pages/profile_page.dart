@@ -5,6 +5,7 @@ import '../../../../core/application/app_state.dart';
 import '../../../../core/widgets/responsive_widgets.dart';
 import '../../../../core/widgets/custom_snackbar.dart';
 import '../../../login/presentation/providers/login_notifier.dart';
+import 'about_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -285,8 +286,8 @@ class ProfilePage extends StatelessWidget {
                           context,
                           icon: Icons.info_outline,
                           title: 'Acerca de',
-                          value: 'Versión 2.0',
-                          onTap: () {},
+                          value: 'Versión ${AboutPage.appVersion}',
+                          onTap: () => context.push('/profile/about'),
                         ),
                         _buildDivider(context),
                         
@@ -295,7 +296,16 @@ class ProfilePage extends StatelessWidget {
                           icon: Icons.help_outline,
                           title: 'Ayuda',
                           value: 'Centro de ayuda',
-                          onTap: () {},
+                          onTap: () => context.push('/profile/help'),
+                        ),
+                        _buildDivider(context),
+                        
+                        _buildInfoTile(
+                          context,
+                          icon: Icons.lock_outline,
+                          title: 'Cambiar Contraseña',
+                          value: 'Recuperar o cambiar contraseña',
+                          onTap: () => context.push('/profile/password-recovery'),
                         ),
                       ],
                     ),
